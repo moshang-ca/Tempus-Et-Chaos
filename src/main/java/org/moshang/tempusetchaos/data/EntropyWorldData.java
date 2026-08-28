@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class EntropyWorldData extends SavedData {
-    private static final float EPSILON = .01f;
+    private static final float EPSILON = 1.f;
 
     @Getter
     private final Map<ChunkPos, Float> concentrations = new HashMap<>();
@@ -39,7 +39,15 @@ public class EntropyWorldData extends SavedData {
         return data;
     }
 
+    public static float getConcentration(ServerLevel level, ChunkPos pos) {
+        return EntropyWorldData.get(level).getConcentration(pos);
+    }
+
     private EntropyWorldData() {}
+
+    public Map<ChunkPos, Float> snapshot() {
+        return new HashMap<>(concentrations);
+    }
 
     public float getConcentration(ChunkPos cpos) {
         return concentrations.getOrDefault(cpos, 0.f);
@@ -52,8 +60,7 @@ public class EntropyWorldData extends SavedData {
 
     public void addConcentration(ChunkPos cPos, float increment) {
         float res = getConcentration(cPos) + increment;
-        res = res < EPSILON ? 0 : res;
-        setConcentration(cPos, res);
+        setConcentration(cPos, res < EPSILON ? 0 : res);
     }
 
     public void cleanupInvalid() {

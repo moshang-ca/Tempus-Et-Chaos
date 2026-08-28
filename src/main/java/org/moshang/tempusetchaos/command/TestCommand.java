@@ -44,6 +44,5 @@ public class TestCommand {
                                 })
                         )
         );
-        System.out.println("Command Registered");
     }
 }
