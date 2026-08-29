@@ -5,9 +5,13 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.moshang.tempusetchaos.TempusEtChaos;
 import org.moshang.tempusetchaos.data.EntropyWorldData;
@@ -23,7 +27,7 @@ public class EntropyEffectHandler {
             BlockPos playerPos = player.blockPosition();
             RandomSource rand = player.getRandom();
 
-            float concentration = EntropyWorldData.getConcentration(level, new ChunkPos(playerPos));
+            float concentration = EntropyWorldData.getConcentration(level, player.chunkPosition());
             if (concentration <= 10f) continue;
 
             int particleCnt = (int) (concentration * 1.5);
@@ -42,6 +46,32 @@ public class EntropyEffectHandler {
                     0.5
                 );
             }
+        }
+    }
+
+    @SubscribeEvent
+    public static void ServerEntropyEntityEffect(EntityTickEvent.Post event) {
+        Entity entity = event.getEntity();
+        if (entity.tickCount % 40 == 0) {
+            if ((entity instanceof LivingEntity living) && (entity.level() instanceof ServerLevel level)) {
+                float concentration = EntropyWorldData.getConcentration(level, living.chunkPosition());
+                if (concentration > 30f) {
+                    float intensity = (concentration - 30) / 70f;
+                    applyEffect(living, intensity);
+                }
+            }
+        }
+    }
+
+    private static void applyEffect(LivingEntity living, float intensity) {
+        living.hurt(living.damageSources().magic(), intensity * 3.5f + .5f);
+
+        if (intensity > .1f) {
+            int amplifier = (int) (intensity * 2);
+            if (intensity > .2f)
+                living.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 60, amplifier));
+            if (intensity > .5f)
+                living.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 60, amplifier));
         }
     }
 }
