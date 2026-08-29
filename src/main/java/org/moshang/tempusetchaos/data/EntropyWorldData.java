@@ -11,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class EntropyWorldData extends SavedData {
     private static final float EPSILON = 1.f;
@@ -51,6 +52,10 @@ public class EntropyWorldData extends SavedData {
 
     public float getConcentration(ChunkPos cpos) {
         return concentrations.getOrDefault(cpos, 0.f);
+    }
+
+    public Set<ChunkPos> getEntropiedChunks() {
+        return concentrations.keySet();
     }
 
     public void setConcentration(ChunkPos cPos, float concentration) {
