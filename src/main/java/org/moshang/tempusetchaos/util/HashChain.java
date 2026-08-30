@@ -1,12 +1,16 @@
 package org.moshang.tempusetchaos.util;
 
+import com.mojang.logging.LogUtils;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
 
 import java.util.Arrays;
 import java.util.List;
 
 public class HashChain<T> {
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     @FunctionalInterface
     public interface Hasher<T> {
         int hash(T t);
@@ -29,11 +33,18 @@ public class HashChain<T> {
         for (T t : chain) {
             int key = hasher.hash(t);
             Node<T> cur = nodeMap.computeIfAbsent(key, k -> new Node<>(t));
-            if (cur.value != t)
-                nodeMap.put(key, new Node<>(t));    // If the key already exists (in some exceptional cases), we will cover it by default.
+            // If the key already exists but does not equal the value (in some exceptional cases),
+            // we will ignore it and after it by default.
+            if (!cur.value.equals(t)) {
+                LOGGER.warn("Detect hash collision: {} (with {} has in chain), aborting chain", t, cur.value);
+                return;
+            }
             if (prev != null) {
                 prev.next = cur;
-                cur.prev = prev;
+                if (cur.prev == null)
+                    cur.prev = prev;
+                // if the chains intersect, we'll ignore all elements after it.
+                else return;
             }
             prev = cur;
         }

@@ -28,6 +28,7 @@ public class EntropyEffectHandler {
 
     static {
         AGING_CHAINS.addChain(Blocks.STONE, Blocks.COBBLESTONE, Blocks.GRAVEL, Blocks.SAND);
+        AGING_CHAINS.addChain(Blocks.GRASS_BLOCK, Blocks.DIRT, Blocks.SAND, Blocks.GLASS);
     }
 
     @SubscribeEvent
@@ -68,13 +69,13 @@ public class EntropyEffectHandler {
         for (ServerLevel level : event.getServer().getAllLevels()) {
             EntropyWorldData entropyData = EntropyWorldData.get(level);
             for (ChunkPos pos : entropyData.getEntropiedChunks()) {
-                int count = level.random.nextInt(5, 5 + (int) (entropyData.getConcentration(pos) / 10));
+                int count = level.random.nextIntBetweenInclusive(5, 5 + (int) (entropyData.getConcentration(pos) / 10));
                 int x = pos.getMinBlockX();
                 int z = pos.getMinBlockZ();
                 for (int i = 0; i < count; i++) {
                     BlockPos selectedPos = new BlockPos(
                             x + level.random.nextInt(16),
-                            level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) + level.random.nextInt(-5, 0),
+                            level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) + level.random.nextIntBetweenInclusive(-5, 0),
                             z + level.random.nextInt(16)
                     );
                     Block selected = level.getBlockState(selectedPos).getBlock();
