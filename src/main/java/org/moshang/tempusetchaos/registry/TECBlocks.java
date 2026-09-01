@@ -5,14 +5,21 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.moshang.tempusetchaos.TempusEtChaos;
+import org.moshang.tempusetchaos.block.BlockChrononNetCable;
+import org.moshang.tempusetchaos.block.BlockVirtualNode;
 
 import java.util.function.Function;
 
 public class TECBlocks {
     public static final DeferredRegister.Blocks BLOCK_DR = DeferredRegister.createBlocks(TempusEtChaos.MODID);
 
-    private static DeferredBlock<Block> registerItemLikeBlock(String name, Function<BlockBehaviour.Properties, ? extends Block> func) {
-        DeferredBlock<Block> toReturn = BLOCK_DR.registerBlock(name, func);
+    public static final DeferredBlock<BlockChrononNetCable> CHRONON_NET_CABLE =
+            registerItemLikeBlock("chronon_cable", BlockChrononNetCable::new);
+    public static final DeferredBlock<BlockVirtualNode> VIRTUAL_NODE =
+            registerItemLikeBlock("virtual_node", BlockVirtualNode::new);
+
+    private static <T extends Block> DeferredBlock<T> registerItemLikeBlock(String name, Function<BlockBehaviour.Properties, ? extends T> func) {
+        DeferredBlock<T> toReturn = BLOCK_DR.registerBlock(name, func);
         TECItems.registerBlockItem(toReturn, null);
         return toReturn;
     }

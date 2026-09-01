@@ -16,7 +16,7 @@ public class TECItems {
     public static final DeferredRegister.Items ITEM_DR = DeferredRegister.createItems(TempusEtChaos.MODID);
     public static final Map<String, DeferredItem<BlockItem>> BLOCK_ITEMS = new HashMap<>();
 
-    public static void registerBlockItem(DeferredBlock<Block> block, @Nullable Item.Properties properties)
+    public static <T extends Block> void registerBlockItem(DeferredBlock<T> block, @Nullable Item.Properties properties)
     {
         BLOCK_ITEMS.put(block.getRegisteredName(), ITEM_DR.registerSimpleBlockItem(block, properties != null ? properties : new Item.Properties()));
     }
