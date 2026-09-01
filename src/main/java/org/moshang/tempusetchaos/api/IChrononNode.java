@@ -8,16 +8,17 @@ import org.moshang.tempusetchaos.data.ChrononNetwork;
 import java.util.Set;
 import java.util.UUID;
 
-public interface IChrononNode {
+public interface IChrononNode extends ICableConnectable {
     void setNetworkUUID(UUID uuid);
 
     UUID getNetworkUUID();
     Level getLevel();
     BlockPos getNodePos();
     NodeType getNodeType();
-    int getProduced();
-    int getConsumed();
-    int getCapacity();
+
+    default int getProduced() { return 0; }
+    default int getConsumed() { return 0; }
+    default int getCapacity() { return 0; }
 
     static void onNodePlaced(Level level, BlockPos pos, IChrononNode node) {
         if (level.isClientSide || !(level instanceof ServerLevel serverLevel)) return;

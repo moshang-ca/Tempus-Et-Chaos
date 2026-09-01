@@ -57,14 +57,12 @@ public class ChrononNetwork implements IChrononStorage {
 
     public void addNode(IChrononNode node) {
         IChrononNode.NodeType type = node.getNodeType();
-        if (type == IChrononNode.NodeType.PRODUCER)
-            energySources.add(node.getNodePos());
-        else if (type == IChrononNode.NodeType.CONSUMER)
-            energySinks.add(node.getNodePos());
-        else if (type == IChrononNode.NodeType.STORAGE) {
-            energyStorages.add(node.getNodePos());
-            capacity += node.getCapacity();
+        switch (node.getNodeType()) {
+            case PRODUCER -> energySources.add(node.getNodePos());
+            case CONSUMER -> energySinks.add(node.getNodePos());
+            case STORAGE -> energyStorages.add(node.getNodePos());
         }
+        this.capacity += node.getCapacity();
         markDirty();
     }
 
@@ -72,11 +70,9 @@ public class ChrononNetwork implements IChrononStorage {
         switch (node.getNodeType()) {
             case PRODUCER -> energySources.remove(node.getNodePos());
             case CONSUMER -> energySinks.remove(node.getNodePos());
-            case STORAGE -> {
-                energyStorages.remove(node.getNodePos());
-                this.capacity -= node.getCapacity();
-            }
+            case STORAGE -> energyStorages.remove(node.getNodePos());
         }
+        this.capacity -= node.getCapacity();
         markDirty();
     }
 
