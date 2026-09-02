@@ -4,6 +4,8 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.moshang.tempusetchaos.TempusEtChaos;
+import org.moshang.tempusetchaos.blockentity.BEAccelerator;
+import org.moshang.tempusetchaos.blockentity.BETimeExtractor;
 import org.moshang.tempusetchaos.blockentity.BEVirtualNode;
 
 import java.util.function.Supplier;
@@ -14,4 +16,8 @@ public class TECBlockEntities {
 
     public static final Supplier<BlockEntityType<BEVirtualNode>> VIRTUAL_NODE_BE =
             BE_TYPE_DR.register("virtual_node", () -> BlockEntityType.Builder.of(BEVirtualNode::new, TECBlocks.VIRTUAL_NODE.get()).build(null));
+    public static final Supplier<BlockEntityType<BETimeExtractor>> TIME_EXTRACTOR_BE =
+            BE_TYPE_DR.register("time_extractor", () -> BlockEntityType.Builder.of(BETimeExtractor::new, TECBlocks.TIME_EXTRACTOR.get()).build(null));
+    public static final Supplier<BlockEntityType<BEAccelerator>> ACCELERATOR_BE =
+            BE_TYPE_DR.register("accelerator", () -> BlockEntityType.Builder.of(BEAccelerator::new, TECBlocks.ACCELERATOR.get()).build(null));
 }

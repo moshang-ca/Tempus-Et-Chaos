@@ -2,14 +2,18 @@ package org.moshang.tempusetchaos.block;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import org.moshang.tempusetchaos.api.ICableConnectable;
+import org.moshang.tempusetchaos.data.ChrononNetwork;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.Set;
+import java.util.UUID;
 
 @ParametersAreNonnullByDefault
 public class BlockChrononNetCable extends Block implements ICableConnectable {
@@ -37,6 +41,7 @@ public class BlockChrononNetCable extends Block implements ICableConnectable {
         if (!oldState.is(this) || !oldState.equals(state)) {
             updateConnections(level, pos);
         }
+        onCablePlaced(level, pos);
     }
 
     @Override
@@ -71,7 +76,22 @@ public class BlockChrononNetCable extends Block implements ICableConnectable {
     }
 
     public static void onCablePlaced(Level level, BlockPos pos) {
+        if (level.isClientSide || !(level instanceof ServerLevel serverLevel)) return;
 
+        Set<UUID> adjacent = ChrononNetwork.findAdjacent(serverLevel, pos);
+        if (adjacent.size() > 1) {
+            ChrononNetwork primary = null;
+            for (UUID id : adjacent) {
+                ChrononNetwork network = ChrononNetwork.NETWORK.get(id);
+                if (network == null) continue;
+                if (primary == null) {
+                    primary = network;
+                } else {
+                    primary.merge(id);
+                    System.out.println("merge network as cable connect");
+                }
+            }
+        }
     }
 
     public static boolean isConnected(BlockState state, Direction dir) {
