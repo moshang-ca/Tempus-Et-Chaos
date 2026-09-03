@@ -5,10 +5,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.moshang.tempusetchaos.TempusEtChaos;
-import org.moshang.tempusetchaos.block.BlockAccelerator;
-import org.moshang.tempusetchaos.block.BlockChrononNetCable;
-import org.moshang.tempusetchaos.block.BlockTimeExtractor;
-import org.moshang.tempusetchaos.block.BlockVirtualNode;
+import org.moshang.tempusetchaos.block.*;
 
 import java.util.function.Function;
 
@@ -23,6 +20,8 @@ public class TECBlocks {
             registerItemLikeBlock("time_extractor", BlockTimeExtractor::new);
     public static final DeferredBlock<BlockAccelerator> ACCELERATOR =
             registerItemLikeBlock("accelerator", BlockAccelerator::new);
+    public static final DeferredBlock<BlockReducer> REDUCER =
+            registerItemLikeBlock("reducer", BlockReducer::new);
 
     private static <T extends Block> DeferredBlock<T> registerItemLikeBlock(String name, Function<BlockBehaviour.Properties, ? extends T> func) {
         DeferredBlock<T> toReturn = BLOCK_DR.registerBlock(name, func);

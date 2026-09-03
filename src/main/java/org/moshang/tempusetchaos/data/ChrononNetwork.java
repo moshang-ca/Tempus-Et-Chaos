@@ -11,20 +11,15 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
+import org.moshang.tempusetchaos.api.ICableConnectable;
 import org.moshang.tempusetchaos.api.IChrononNode;
 import org.moshang.tempusetchaos.api.IChrononStorage;
 import org.moshang.tempusetchaos.block.BlockChrononNetCable;
 
 import java.lang.ref.WeakReference;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class ChrononNetwork implements IChrononStorage {
-    public static final Map<UUID, ChrononNetwork> NETWORK = new ConcurrentHashMap<>();
-
-    @Nullable
-    public static ChrononNetwork get(UUID uuid) { return NETWORK.get(uuid); }
-
     @Getter
     private final UUID uuid;
     @Getter
@@ -43,7 +38,6 @@ public class ChrononNetwork implements IChrononStorage {
     public ChrononNetwork(UUID uuid, Level level) {
         this.uuid = uuid;
         this.levelRef = new WeakReference<>(level);
-        NETWORK.put(uuid, this);
     }
 
     public Set<BlockPos> getConnectors() {
@@ -56,7 +50,6 @@ public class ChrononNetwork implements IChrononStorage {
     }
 
     public void addNode(IChrononNode node) {
-        IChrononNode.NodeType type = node.getNodeType();
         switch (node.getNodeType()) {
             case PRODUCER -> energySources.add(node.getNodePos());
             case CONSUMER -> energySinks.add(node.getNodePos());
@@ -73,12 +66,15 @@ public class ChrononNetwork implements IChrononStorage {
             case STORAGE -> energyStorages.remove(node.getNodePos());
         }
         this.capacity -= node.getCapacity();
+        ChrononNetwork.checkAndSplit(levelRef.get(), node.getNodePos());
         markDirty();
     }
 
     public void merge(UUID networkId) {
         if (networkId.equals(uuid)) return;
-        ChrononNetwork other = NETWORK.get(networkId);
+
+        ChrononNetworkData networkData = ChrononNetworkData.get(Objects.requireNonNull(levelRef.get()));
+        ChrononNetwork other = networkData.getNetwork(networkId);
         if (other == null) return;
 
         this.capacity += other.capacity;
@@ -89,21 +85,31 @@ public class ChrononNetwork implements IChrononStorage {
             addNode(node);
             node.setNetworkUUID(this.uuid);
         }
-        NETWORK.remove(networkId);
+        networkData.removeNetwork(networkId);
     }
 
-    public List<ChrononNetwork> checkAndSplit() {
-        Set<BlockPos> remaining = getConnectors();
+    public static void checkAndSplit(Level level, BlockPos brokenPos) {
+        if (level == null) return;
 
-        if(remaining.isEmpty()) {
-            NETWORK.remove(uuid);
-            return Collections.emptyList();
+        List<BlockPos> starters = new ArrayList<>();
+        for (Direction d : Direction.values()) {
+            BlockPos neighbor = brokenPos.relative(d);
+            if (isCable(level, neighbor) || level.getBlockEntity(neighbor) instanceof ICableConnectable) {
+                starters.add(neighbor);
+            }
         }
+        if (starters.isEmpty()) {
+            if (level.getBlockEntity(brokenPos) instanceof IChrononNode node) {
+                ChrononNetworkData.removeLevelNetwork(level, node.getNetworkUUID());
+            }
+            return;
+        }
+        if (starters.size() == 1) return;
 
-        List<Set<BlockPos>> components = findConnectedComponent(remaining);
-        if (components.size() <= 1) return Collections.emptyList();
-
-        return splitNetwork(components);
+        List<Set<BlockPos>> components = findConnectedComponent(level, starters, brokenPos);
+        if (components.size() <= 1) return;
+        UUID oldId = level.getBlockEntity(components.getFirst().iterator().next()) instanceof IChrononNode node ? node.getNetworkUUID() : null;
+        splitNetwork(level, components, oldId);
     }
 
     public boolean isEmpty() {
@@ -112,17 +118,15 @@ public class ChrononNetwork implements IChrononStorage {
 
     public void markDirty() {
         Level level = this.levelRef.get();
-        if (level instanceof ServerLevel serverLevel)
-            ChrononNetworkData.get(serverLevel).save();
+        if (level != null)
+            ChrononNetworkData.get(level).save();
     }
 
-    private List<ChrononNetwork> splitNetwork(List<Set<BlockPos>> components) {
-        List<ChrononNetwork> newNetworks = new ArrayList<>();
-
+    private static void splitNetwork(Level level, List<Set<BlockPos>> components, UUID oldId) {
+        if (level == null) return;
+        ChrononNetworkData networkData = ChrononNetworkData.get(level);
         for (var component : components) {
-            Level level = levelRef.get();
-            if (level == null) break;
-            ChrononNetwork network = new ChrononNetwork(levelRef.get());
+            ChrononNetwork network = new ChrononNetwork(level);
             for (BlockPos pos : component) {
                 IChrononNode node = level.getBlockEntity(pos) instanceof IChrononNode n ? n : null;
                 if (node != null) {
@@ -131,44 +135,44 @@ public class ChrononNetwork implements IChrononStorage {
                 }
             }
             if (!network.isEmpty()) {
-                NETWORK.put(network.uuid, network);
-                newNetworks.add(network);
+                networkData.addNetwork(network);
             }
         }
-        NETWORK.remove(this.uuid);
-        return newNetworks;
+        networkData.removeNetwork(oldId);
     }
 
-    private List<Set<BlockPos>> findConnectedComponent(Set<BlockPos> nodes) {
+    private static List<Set<BlockPos>> findConnectedComponent(Level level, List<BlockPos> starters, BlockPos brokenPos) {
+        if (level == null) return Collections.emptyList();
         List<Set<BlockPos>> components = new ArrayList<>();
         Set<BlockPos> visited = new HashSet<>();
 
-        for (BlockPos start : nodes) {
+        for (BlockPos start : starters) {
             if (visited.contains(start)) continue;
-
             Set<BlockPos> component = new HashSet<>();
             Queue<BlockPos> queue = new ArrayDeque<>();
             queue.add(start);
             visited.add(start);
 
-            while (!queue.isEmpty()) {
-                BlockPos current = queue.poll();
-                if (nodes.contains(current)) component.add(current);
+            while(!queue.isEmpty()) {
+                BlockPos curr = queue.poll();
+                if (level.getBlockEntity(curr) instanceof IChrononNode)
+                    component.add(curr);
 
-                for (Direction dir : Direction.values()) {
-                    BlockPos neighbor = current.relative(dir);
+                for (Direction d : Direction.values()) {
+                    BlockPos neighbor = curr.relative(d);
                     if (visited.contains(neighbor)) continue;
+                    if (neighbor.equals(brokenPos)) continue;
+                    if (!(isCable(level, neighbor) || level.getBlockEntity(neighbor) instanceof ICableConnectable))
+                        continue;
 
-                    if (nodes.contains(neighbor) || isCable(this.levelRef.get(), neighbor)) {
-                        visited.add(neighbor);
-                        queue.add(neighbor);
-                    }
+                    visited.add(neighbor);
+                    queue.add(neighbor);
                 }
             }
-            if (!component.isEmpty()) {
+            if (!component.isEmpty())
                 components.add(component);
-            }
         }
+
         return components;
     }
 
@@ -236,6 +240,7 @@ public class ChrononNetwork implements IChrononStorage {
         Set<UUID> found = new HashSet<>();
         Set<BlockPos> visited = new HashSet<>();
         Queue<BlockPos> queue = new ArrayDeque<>();
+        ChrononNetworkData networkData = ChrononNetworkData.get(level);
 
         for (Direction dir : Direction.values()) {
             queue.add(pos.relative(dir));
@@ -248,7 +253,7 @@ public class ChrononNetwork implements IChrononStorage {
 
             if (level.getBlockEntity(current) instanceof IChrononNode node) {
                 UUID foundNetworkUUID = node.getNetworkUUID();
-                if (foundNetworkUUID != null && NETWORK.containsKey(foundNetworkUUID))
+                if (foundNetworkUUID != null && networkData.hasNetwork(foundNetworkUUID))
                     found.add(foundNetworkUUID);
                 continue;
             }

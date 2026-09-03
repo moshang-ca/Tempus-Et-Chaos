@@ -33,6 +33,14 @@ public class BlockVirtualNode extends Block implements EntityBlock {
     }
 
     @Override
+    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+        if (level.getBlockEntity(pos) instanceof IChrononNode node) {
+            IChrononNode.onNodeRemoved(level, pos, node);
+        }
+        super.onRemove(state, level, pos, newState, movedByPiston);
+    }
+
+    @Override
     public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new BEVirtualNode(pos, state);
     }

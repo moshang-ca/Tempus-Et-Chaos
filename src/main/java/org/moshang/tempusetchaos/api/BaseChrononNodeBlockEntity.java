@@ -7,6 +7,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.moshang.tempusetchaos.data.ChrononNetwork;
+import org.moshang.tempusetchaos.data.ChrononNetworkData;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.UUID;
@@ -25,7 +26,7 @@ public abstract class BaseChrononNodeBlockEntity extends BlockEntity implements 
     public void serverTick() {
         if (level == null || level.isClientSide) return;
         if (innerNetwork == null) {
-            innerNetwork = uuid == null ? null : ChrononNetwork.get(uuid);
+            innerNetwork = uuid == null ? null : ChrononNetworkData.getLevelNetwork(level, uuid);
         }
     }
 

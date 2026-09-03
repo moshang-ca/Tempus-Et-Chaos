@@ -10,6 +10,7 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import org.moshang.tempusetchaos.api.ICableConnectable;
 import org.moshang.tempusetchaos.data.ChrononNetwork;
+import org.moshang.tempusetchaos.data.ChrononNetworkData;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Set;
@@ -45,6 +46,13 @@ public class BlockChrononNetCable extends Block implements ICableConnectable {
     }
 
     @Override
+    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+        if (!newState.is(state.getBlock()))
+            onCableRemoved(level, pos);
+        super.onRemove(state, level, pos, newState, movedByPiston);
+    }
+
+    @Override
     protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock, BlockPos neighborPos, boolean movedByPiston) {
         super.neighborChanged(state, level, pos, neighborBlock, neighborPos, movedByPiston);
         if (!level.isClientSide) {
@@ -76,22 +84,26 @@ public class BlockChrononNetCable extends Block implements ICableConnectable {
     }
 
     public static void onCablePlaced(Level level, BlockPos pos) {
-        if (level.isClientSide || !(level instanceof ServerLevel serverLevel)) return;
+        if (!(level instanceof ServerLevel serverLevel)) return;
 
         Set<UUID> adjacent = ChrononNetwork.findAdjacent(serverLevel, pos);
         if (adjacent.size() > 1) {
             ChrononNetwork primary = null;
             for (UUID id : adjacent) {
-                ChrononNetwork network = ChrononNetwork.NETWORK.get(id);
+                ChrononNetwork network = ChrononNetworkData.getLevelNetwork(level, id);
                 if (network == null) continue;
                 if (primary == null) {
                     primary = network;
                 } else {
                     primary.merge(id);
-                    System.out.println("merge network as cable connect");
                 }
             }
         }
+    }
+
+    public static void onCableRemoved(Level level, BlockPos pos) {
+        if (level.isClientSide) return;
+        ChrononNetwork.checkAndSplit(level, pos);
     }
 
     public static boolean isConnected(BlockState state, Direction dir) {

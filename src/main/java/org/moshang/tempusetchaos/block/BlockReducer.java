@@ -11,13 +11,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 import org.moshang.tempusetchaos.api.BaseChrononNodeBlockEntity;
 import org.moshang.tempusetchaos.api.IChrononNode;
-import org.moshang.tempusetchaos.blockentity.BEAccelerator;
+import org.moshang.tempusetchaos.blockentity.BEReducer;
 
-import javax.annotation.ParametersAreNonnullByDefault;
-
-@ParametersAreNonnullByDefault
-public class BlockAccelerator extends Block implements EntityBlock {
-    public BlockAccelerator(Properties properties) {
+public class BlockReducer extends Block implements EntityBlock {
+    public BlockReducer(Properties properties) {
         super(properties);
     }
 
@@ -42,12 +39,12 @@ public class BlockAccelerator extends Block implements EntityBlock {
 
     @Override
     public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return new BEAccelerator(pos, state);
+        return new BEReducer(pos, state);
     }
 
     @Override
     public @Nullable <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> blockEntityType) {
-        return level.isClientSide ? null :(lvl, pos, st, be) -> {
+        return level.isClientSide ? null : (lvl, pos, st, be) -> {
             if (be instanceof BaseChrononNodeBlockEntity blockEntity) {
                 blockEntity.serverTick();
             }
