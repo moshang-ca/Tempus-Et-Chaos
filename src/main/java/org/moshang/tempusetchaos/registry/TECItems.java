@@ -16,6 +16,8 @@ public class TECItems {
     public static final DeferredRegister.Items ITEM_DR = DeferredRegister.createItems(TempusEtChaos.MODID);
     public static final Map<String, DeferredItem<BlockItem>> BLOCK_ITEMS = new HashMap<>();
 
+    public static final DeferredItem<Item> ENTROPY_CRYSTAL = ITEM_DR.registerSimpleItem("entropy_crystal");
+
     public static <T extends Block> void registerBlockItem(DeferredBlock<T> block, @Nullable Item.Properties properties)
     {
         BLOCK_ITEMS.put(block.getRegisteredName(), ITEM_DR.registerSimpleBlockItem(block, properties != null ? properties : new Item.Properties()));
