@@ -1,6 +1,8 @@
 package org.moshang.tempusetchaos.registry;
 
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -22,11 +24,23 @@ public class TECBlocks {
             registerItemLikeBlock("accelerator", BlockAccelerator::new);
     public static final DeferredBlock<BlockReducer> REDUCER =
             registerItemLikeBlock("reducer", BlockReducer::new);
+    public static final DeferredBlock<BlockEntropyReactor> ENTROPY_REACTOR =
+            registerItemLikeBlock("entropy_reactor", BlockEntropyReactor::new);
+
+    public static final DeferredBlock<LiquidBlock> GAS_ENTROPY =
+            BLOCK_DR.register("gas_entropy_block", () -> new LiquidBlock(TECUtilities.GAS_ENTROPY_SOURCE.get(), BlockBehaviour.Properties.ofFullCopy(Blocks.WATER)));
+
+    public static final DeferredBlock<Block> ENTROPY_CRYSTAL_BLOCK =
+            registerItemLikeSimpleBlock("entropy_crystal_block");
 
     private static <T extends Block> DeferredBlock<T> registerItemLikeBlock(String name, Function<BlockBehaviour.Properties, ? extends T> func) {
         DeferredBlock<T> toReturn = BLOCK_DR.registerBlock(name, func);
         TECItems.registerBlockItem(toReturn, null);
         return toReturn;
+    }
+
+    private static DeferredBlock<Block> registerItemLikeSimpleBlock(String name) {
+        return registerItemLikeBlock(name, Block::new);
     }
 
 

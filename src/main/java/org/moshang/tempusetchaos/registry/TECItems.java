@@ -1,7 +1,9 @@
 package org.moshang.tempusetchaos.registry;
 
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -17,6 +19,9 @@ public class TECItems {
     public static final Map<String, DeferredItem<BlockItem>> BLOCK_ITEMS = new HashMap<>();
 
     public static final DeferredItem<Item> ENTROPY_CRYSTAL = ITEM_DR.registerSimpleItem("entropy_crystal");
+
+    public static final DeferredItem<BucketItem> GAS_ENTROPY_BUCKET =
+            ITEM_DR.register("gas_entropy_bucket", () -> new BucketItem(TECUtilities.GAS_ENTROPY_SOURCE.get(), new Item.Properties().craftRemainder(Items.BUCKET).stacksTo(1)));
 
     public static <T extends Block> void registerBlockItem(DeferredBlock<T> block, @Nullable Item.Properties properties)
     {

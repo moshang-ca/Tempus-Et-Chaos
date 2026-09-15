@@ -39,7 +39,7 @@ public class TestCommand {
                                     ServerLevel level = context.getSource().getLevel();
                                     EntropyWorldData data = EntropyWorldData.get(level);
                                     context.getSource().sendSuccess(() ->
-                                            Component.literal("Concentrations: " + data.getConcentrations()), false);
+                                            Component.literal("Concentrations: " + data.getView()), false);
                                     return 1;
                                 })
                         )

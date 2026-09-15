@@ -44,7 +44,7 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity {
     private final List<Entity> entityCache = new ArrayList<>();
     private final AABB area;
     @Getter
-    private int accelerateMultiplier = 8;
+    private int accelerateMultiplier = 2;
     @Getter
     private int consumed = 0;
     private long tickCounter = 0;

@@ -10,6 +10,7 @@ import org.moshang.tempusetchaos.client.ChrononCableGeometryLoader;
 import org.moshang.tempusetchaos.registry.TECBlockEntities;
 import org.moshang.tempusetchaos.registry.TECBlocks;
 import org.moshang.tempusetchaos.registry.TECItems;
+import org.moshang.tempusetchaos.registry.TECUtilities;
 import org.slf4j.Logger;
 
 @Mod(TempusEtChaos.MODID)
@@ -23,6 +24,8 @@ public class TempusEtChaos {
         TECBlocks.BLOCK_DR.register(modEventBus);
         TECItems.ITEM_DR.register(modEventBus);
         TECBlockEntities.BE_TYPE_DR.register(modEventBus);
+        TECUtilities.FLUID_TYPE_DR.register(modEventBus);
+        TECUtilities.FLUID_DR.register(modEventBus);
     }
 
     public void onModelLoaderRegister(ModelEvent.RegisterGeometryLoaders event) {

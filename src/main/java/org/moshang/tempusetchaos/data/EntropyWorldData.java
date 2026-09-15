@@ -1,6 +1,5 @@
 package org.moshang.tempusetchaos.data;
 
-import lombok.Getter;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
@@ -9,6 +8,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.saveddata.SavedData;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -16,7 +16,6 @@ import java.util.Set;
 public class EntropyWorldData extends SavedData {
     private static final float EPSILON = 1.f;
 
-    @Getter
     private final Map<ChunkPos, Float> concentrations = new HashMap<>();
 
     public static EntropyWorldData create() {
@@ -61,6 +60,10 @@ public class EntropyWorldData extends SavedData {
     public void setConcentration(ChunkPos cPos, float concentration) {
         concentrations.put(cPos, Mth.clamp(concentration, 0.f, 100.f));
         setDirty();
+    }
+
+    public Map<ChunkPos, Float> getView() {
+        return Collections.unmodifiableMap(concentrations);
     }
 
     public void addConcentration(ChunkPos cPos, float increment) {

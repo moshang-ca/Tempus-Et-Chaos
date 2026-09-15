@@ -17,7 +17,7 @@ import java.util.Set;
 public class BETimeExtractor extends BaseChrononNodeBlockEntity {
     public static final Set<Block> PRODUCE_CONDITIONS = Set.of(Blocks.BEDROCK, Blocks.DEEPSLATE, Blocks.END_STONE);
 
-    private final int extractSpeed = 1;     // 1 ch/tick
+    private final int extractSpeed = 5;     // 5 ch/tick
     @Setter
     private boolean canProduce = false;
 
@@ -31,7 +31,6 @@ public class BETimeExtractor extends BaseChrononNodeBlockEntity {
         if (innerNetwork != null) {
             if (canProduce) {
                 innerNetwork.receiveChronon(extractSpeed, false);
-                System.out.println("BETimeExtractor received time extraction speed: " + extractSpeed);
             }
         }
     }
