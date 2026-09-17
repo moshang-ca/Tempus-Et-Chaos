@@ -23,4 +23,6 @@ public class TECBlockEntities {
             BE_TYPE_DR.register("reducer", () -> BlockEntityType.Builder.of(BEReducer::new, TECBlocks.REDUCER.get()).build(null));
     public static final Supplier<BlockEntityType<BEEntropyReactor>> ENTROPY_REACTOR_BE =
             BE_TYPE_DR.register("entropy_reactor", () -> BlockEntityType.Builder.of(BEEntropyReactor::new, TECBlocks.ENTROPY_REACTOR.get()).build(null));
+    public static final Supplier<BlockEntityType<BEEntropyNode>> ENTROPY_NODE_BE =
+            BE_TYPE_DR.register("entropy_node", () -> BlockEntityType.Builder.of(BEEntropyNode::new, TECBlocks.ENTROPY_NODE.get()).build(null));
 }

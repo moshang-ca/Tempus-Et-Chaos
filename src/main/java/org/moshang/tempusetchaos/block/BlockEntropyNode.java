@@ -12,15 +12,15 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.moshang.tempusetchaos.api.BaseChrononMachineryBlock;
 import org.moshang.tempusetchaos.api.BaseChrononNodeBlockEntity;
-import org.moshang.tempusetchaos.blockentity.BEEntropyReactor;
+import org.moshang.tempusetchaos.blockentity.BEEntropyNode;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
 @ParametersAreNonnullByDefault
-public class BlockEntropyReactor extends BaseChrononMachineryBlock {
-    private static final MapCodec<BlockEntropyReactor> CODEC = simpleCodec(BlockEntropyReactor::new);
+public class BlockEntropyNode extends BaseChrononMachineryBlock {
+    private static final MapCodec<BlockEntropyNode> CODEC = simpleCodec(BlockEntropyNode::new);
 
-    public BlockEntropyReactor(Properties properties) {
+    public BlockEntropyNode(Properties properties) {
         super(properties);
     }
 
@@ -32,7 +32,7 @@ public class BlockEntropyReactor extends BaseChrononMachineryBlock {
 
     @Override
     public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return new BEEntropyReactor(pos, state);
+        return new BEEntropyNode(pos, state);
     }
 
     @Override

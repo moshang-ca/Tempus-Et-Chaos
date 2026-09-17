@@ -1,5 +1,6 @@
 package org.moshang.tempusetchaos.blockentity;
 
+import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -24,7 +25,9 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 @ParametersAreNonnullByDefault
 public class BEEntropyReactor extends BaseChrononNodeBlockEntity {
-    private final FluidTank fluidHandler = new FluidTank(50000, stack -> stack.is(TECUtilities.GAS_ENTROPY_TYPE.get()));
+    @Getter
+    private final FluidTank fluidHandler = new FluidTank(51200, stack -> stack.is(TECUtilities.GAS_ENTROPY_TYPE.get()));
+    @Getter
     private final IItemHandler itemHandler = new ItemStackHandler(3);       // Maybe we should not allow input slot to be extracted?
     private final int baseConsumption = 10;     // 10 ch/tick
     private final ChunkPos inChunk;
@@ -50,11 +53,11 @@ public class BEEntropyReactor extends BaseChrononNodeBlockEntity {
             entropyData = EntropyWorldData.get((ServerLevel) level);
         float concentration = entropyData.getConcentration(inChunk);
         if (concentration < 3f) {
-            fluidHandler.fill(new FluidStack(TECUtilities.GAS_ENTROPY_SOURCE.get(), Math.max((int) concentration * 100, 10)), IFluidHandler.FluidAction.EXECUTE);
+            fluidHandler.fill(new FluidStack(TECUtilities.GAS_ENTROPY_SOURCE.get(), Math.max((int) concentration * 10, 15)), IFluidHandler.FluidAction.EXECUTE);
         } else {
-            fluidHandler.fill(new FluidStack(TECUtilities.GAS_ENTROPY_SOURCE.get(), Math.max((int) concentration * 150, 15)), IFluidHandler.FluidAction.EXECUTE);
+            fluidHandler.fill(new FluidStack(TECUtilities.GAS_ENTROPY_SOURCE.get(), Math.max((int) concentration * 15, 20)), IFluidHandler.FluidAction.EXECUTE);
             if (concentration > 10f) {
-                itemHandler.insertItem(1, new ItemStack(TECItems.ENTROPY_CRYSTAL.get(), (int) (concentration / 20f) + 1), false);
+                itemHandler.insertItem(1, new ItemStack(TECItems.ENTROPY_CRYSTAL.get(), (int) (concentration / 40f) + 1), false);
                 if (concentration > 75f) {
                     //noinspection DataFlowIssue
                     itemHandler.insertItem(2, new ItemStack(TECItems.getBlockItem(TECBlocks.ENTROPY_CRYSTAL_BLOCK.getRegisteredName()), 1), false);
@@ -68,7 +71,6 @@ public class BEEntropyReactor extends BaseChrononNodeBlockEntity {
             FluidStack entropy = fluidHandler.drain(9999999, IFluidHandler.FluidAction.EXECUTE);
             entropyData.addConcentration(inChunk, Mth.clamp(entropy.getAmount() / 1250f, 0, 20));
         }
-        System.out.println(fluidHandler.getFluid());
     }
 
     @Override

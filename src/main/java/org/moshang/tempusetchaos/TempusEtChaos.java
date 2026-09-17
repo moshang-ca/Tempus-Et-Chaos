@@ -6,11 +6,8 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.ModelEvent;
-import org.moshang.tempusetchaos.client.ChrononCableGeometryLoader;
-import org.moshang.tempusetchaos.registry.TECBlockEntities;
-import org.moshang.tempusetchaos.registry.TECBlocks;
-import org.moshang.tempusetchaos.registry.TECItems;
-import org.moshang.tempusetchaos.registry.TECUtilities;
+import org.moshang.tempusetchaos.block.BlockChrononNetCable;
+import org.moshang.tempusetchaos.registry.*;
 import org.slf4j.Logger;
 
 @Mod(TempusEtChaos.MODID)
@@ -26,9 +23,11 @@ public class TempusEtChaos {
         TECBlockEntities.BE_TYPE_DR.register(modEventBus);
         TECUtilities.FLUID_TYPE_DR.register(modEventBus);
         TECUtilities.FLUID_DR.register(modEventBus);
+
+        modEventBus.addListener(TECCapabilities::register);
     }
 
     public void onModelLoaderRegister(ModelEvent.RegisterGeometryLoaders event) {
-        event.register(ResourceLocation.fromNamespaceAndPath(MODID, "chronon_cable"), new ChrononCableGeometryLoader());
+        event.register(ResourceLocation.fromNamespaceAndPath(MODID, "chronon_cable"), new BlockChrononNetCable.ChrononCableGeometryLoader());
     }
 }

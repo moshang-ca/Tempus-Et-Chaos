@@ -1,5 +1,6 @@
 package org.moshang.tempusetchaos.api;
 
+import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -16,6 +17,7 @@ import java.util.UUID;
 public abstract class BaseChrononNodeBlockEntity extends BlockEntity implements IChrononNode {
     protected UUID uuid;
     protected ChrononNetwork innerNetwork;
+    @Getter
     protected final int capacity;
 
     public BaseChrononNodeBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState blockState, int chrononCapacity) {
@@ -43,11 +45,6 @@ public abstract class BaseChrononNodeBlockEntity extends BlockEntity implements 
     @Override
     public BlockPos getNodePos() {
         return getBlockPos();
-    }
-
-    @Override
-    public int getCapacity() {
-        return capacity;
     }
 
     @Override

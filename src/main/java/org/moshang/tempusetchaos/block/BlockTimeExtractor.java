@@ -1,44 +1,34 @@
 package org.moshang.tempusetchaos.block;
 
+import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.moshang.tempusetchaos.api.BaseChrononMachineryBlock;
 import org.moshang.tempusetchaos.api.BaseChrononNodeBlockEntity;
-import org.moshang.tempusetchaos.api.IChrononNode;
 import org.moshang.tempusetchaos.blockentity.BETimeExtractor;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
 @ParametersAreNonnullByDefault
-public class BlockTimeExtractor extends Block implements EntityBlock {
+public class BlockTimeExtractor extends BaseChrononMachineryBlock {
+    private static final MapCodec<BlockTimeExtractor> CODEC = simpleCodec(BlockTimeExtractor::new);
+
     public BlockTimeExtractor(Properties properties) {
         super(properties);
     }
 
     @Override
-    protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
-        if (!level.isClientSide) {
-            BlockEntity be = level.getBlockEntity(pos);
-            if (be instanceof BETimeExtractor node) {
-                IChrononNode.onNodePlaced(level, pos, node);
-                if (BETimeExtractor.PRODUCE_CONDITIONS.contains(level.getBlockState(pos.below()).getBlock()))
-                    node.setCanProduce(true);
-            }
-        }
-    }
-
-    @Override
-    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
-        if (level.getBlockEntity(pos) instanceof IChrononNode node) {
-            IChrononNode.onNodeRemoved(level, pos, node);
-        }
-        super.onRemove(state, level, pos, newState, movedByPiston);
+    @NotNull
+    protected MapCodec<? extends HorizontalDirectionalBlock> codec() {
+        return CODEC;
     }
 
     @Override
