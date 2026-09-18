@@ -3,6 +3,7 @@ package org.moshang.tempusetchaos.blockentity.network;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
@@ -82,14 +83,14 @@ public final class PipeNetManager {
 
         if (network == null) {
             if (adjacent.isEmpty()) {
-                network = new EntropyPipeNet(pendingId);
+                network = new EntropyPipeNet(level, pendingId);
                 networks.put(network.getUuid(), network);
             } else {
                 Iterator<UUID> iterator = adjacent.iterator();
                 UUID primaryId = iterator.next();
                 network = networks.get(primaryId);
                 if (network == null) {
-                    network = new EntropyPipeNet(primaryId);
+                    network = new EntropyPipeNet(level, primaryId);
                     networks.put(primaryId, network);
                 }
                 while (iterator.hasNext()) {
@@ -156,23 +157,9 @@ public final class PipeNetManager {
 
     private void splitIfNeeded(BlockPos removedPos, EntropyPipeNet network) {
         if (network.size() <= 1) return;
+        if (countMemberNeighbors(network, removedPos) <= 1) return;
 
-        LongOpenHashSet remaining = network.memberCopy();
-        LongOpenHashSet assigned = new LongOpenHashSet();
-        List<LongOpenHashSet> components = new ArrayList<>();
-
-        for (long key : remaining) {
-            if (assigned.contains(key)) continue;
-            LongOpenHashSet component = EntropyPipeNet.collectComponent(
-                    level, BlockPos.of(key), removedPos.asLong(), EntropyPipeNet.MAX_NETWORK_SIZE);
-            component.retainAll(remaining);
-            component.removeAll(assigned);
-            if (component.isEmpty()) continue;
-            if (component.size() >= EntropyPipeNet.MAX_NETWORK_SIZE) return;
-            assigned.addAll(component);
-            components.add(component);
-        }
-
+        List<LongOpenHashSet> components = network.memberComponents();
         if (components.size() <= 1) return;
         components.sort((a, b) -> Integer.compare(b.size(), a.size()));
 
@@ -180,7 +167,7 @@ public final class PipeNetManager {
         networks.remove(network.getUuid());
 
         for (int i = 0; i < components.size(); i++) {
-            EntropyPipeNet split = new EntropyPipeNet(null);
+            EntropyPipeNet split = new EntropyPipeNet(level, null);
             for (long key : components.get(i)) {
                 BlockPos pos = BlockPos.of(key);
                 split.join(pos, 0);
@@ -194,5 +181,13 @@ public final class PipeNetManager {
             if (i == 0) split.addStored(keptStored);
             networks.put(split.getUuid(), split);
         }
+    }
+
+    private static int countMemberNeighbors(EntropyPipeNet network, BlockPos pos) {
+        int count = 0;
+        for (Direction dir : Direction.values()) {
+            if (network.isMember(pos.relative(dir))) count++;
+        }
+        return count;
     }
 }

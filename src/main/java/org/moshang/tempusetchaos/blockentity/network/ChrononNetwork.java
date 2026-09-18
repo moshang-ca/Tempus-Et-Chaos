@@ -210,6 +210,8 @@ public class ChrononNetwork implements IChrononStorage {
 
     public CompoundTag serialize() {
         CompoundTag tag = new CompoundTag();
+        // TODO: We should design a strategy to ensure the network data on the dick is valid
+        tag.putBoolean("has_loaded_nearest", true);
         tag.putUUID("uuid", uuid);
         tag.putLong("chronon_stored", chrononStored);
         tag.putLong("chronon_capacity", capacity);
@@ -230,9 +232,9 @@ public class ChrononNetwork implements IChrononStorage {
         network.chrononStored = tag.getLong("chronon_stored");
         network.capacity = tag.getLong("chronon_capacity");
 
-        network.energySources.addAll(deserializeSet(tag.getList("sources", Tag.TAG_COMPOUND)));
-        network.energySinks.addAll(deserializeSet(tag.getList("sinks", Tag.TAG_COMPOUND)));
-        network.energyStorages.addAll(deserializeSet(tag.getList("storages", Tag.TAG_COMPOUND)));
+        network.energySources.addAll(deserializeSet(tag.getList("sources", Tag.TAG_INT_ARRAY)));
+        network.energySinks.addAll(deserializeSet(tag.getList("sinks", Tag.TAG_INT_ARRAY)));
+        network.energyStorages.addAll(deserializeSet(tag.getList("storages", Tag.TAG_INT_ARRAY)));
 
         return network;
     }

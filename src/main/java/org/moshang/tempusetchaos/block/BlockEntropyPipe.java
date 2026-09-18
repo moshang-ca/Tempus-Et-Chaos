@@ -1,7 +1,18 @@
 package org.moshang.tempusetchaos.block;
 
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import net.minecraft.client.renderer.block.model.ItemOverrides;
+import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.client.resources.model.Material;
+import net.minecraft.client.resources.model.ModelBaker;
+import net.minecraft.client.resources.model.ModelState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -10,23 +21,30 @@ import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.neoforged.neoforge.client.model.geometry.IGeometryBakingContext;
+import net.neoforged.neoforge.client.model.geometry.IGeometryLoader;
+import net.neoforged.neoforge.client.model.geometry.IUnbakedGeometry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.moshang.tempusetchaos.TempusEtChaos;
 import org.moshang.tempusetchaos.api.IChrononNode;
 import org.moshang.tempusetchaos.api.IEntropyPipeConnectable;
 import org.moshang.tempusetchaos.blockentity.BEEntropyPipe;
 import org.moshang.tempusetchaos.blockentity.network.PipeNetManager;
+import org.moshang.tempusetchaos.client.model.CableBakedModel;
+import org.moshang.tempusetchaos.registry.TECCapabilities;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import java.util.function.Function;
+
+import static org.moshang.tempusetchaos.block.BlockChrononNetCable.CONNECTIONS;
+
 @ParametersAreNonnullByDefault
 public class BlockEntropyPipe extends Block implements IEntropyPipeConnectable, EntityBlock {
-    public static final IntegerProperty CONNECTIONS = IntegerProperty.create("connections", 0, 63);
-
     private static final VoxelShape[] SHAPES = new VoxelShape[64];
 
     static {
@@ -122,14 +140,33 @@ public class BlockEntropyPipe extends Block implements IEntropyPipeConnectable, 
     public static boolean shouldPipeConnect(Level level, BlockPos pos, Direction dir) {
         BlockPos neighborPos = pos.relative(dir);
         BlockEntity neighbor = level.getBlockEntity(neighborPos);
-        if (neighbor instanceof IEntropyPipeConnectable connectable) {
+        BlockState neighborState = level.getBlockState(neighborPos);
+        if (level.getCapability(TECCapabilities.FLUID_ENTROPY, neighborPos, neighborState, neighbor, dir) == null)
+            return false;
+        if (neighbor instanceof IEntropyPipeConnectable connectable)
             return connectable.canPipeConnect(dir.getOpposite());
-        }
-        if (neighbor instanceof IChrononNode) {
+        if (neighbor instanceof IChrononNode)
             return true;
-        }
-        return level.getBlockState(neighborPos).getBlock() instanceof IEntropyPipeConnectable connectable
+        return neighborState.getBlock() instanceof IEntropyPipeConnectable connectable
                 && connectable.canPipeConnect(dir.getOpposite());
     }
 
+    @ParametersAreNonnullByDefault
+    public final static class EntropyPipeGeometry implements IUnbakedGeometry<EntropyPipeGeometry> {
+        @Override
+        @NotNull
+        public BakedModel bake(IGeometryBakingContext context, ModelBaker baker, Function<Material, TextureAtlasSprite> spriteGetter, ModelState modelState, ItemOverrides overrides) {
+            TextureAtlasSprite sprite = spriteGetter.apply(new Material(TextureAtlas.LOCATION_BLOCKS, ResourceLocation.fromNamespaceAndPath(TempusEtChaos.MODID, "block/entropy_pipe")));
+            return new CableBakedModel(sprite, new float[]{ 4, 4, 4, 12, 12, 12 }, 4, 12);
+        }
+    }
+
+    @ParametersAreNonnullByDefault
+    public final static class EntropyPipeGeometryLoader implements IGeometryLoader<EntropyPipeGeometry> {
+        @Override
+        @NotNull
+        public EntropyPipeGeometry read(JsonObject jsonObject, JsonDeserializationContext deserializationContext) throws JsonParseException {
+            return new EntropyPipeGeometry();
+        }
+    }
 }

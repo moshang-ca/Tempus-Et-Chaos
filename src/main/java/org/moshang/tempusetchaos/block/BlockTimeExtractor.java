@@ -40,6 +40,16 @@ public class BlockTimeExtractor extends BaseChrononMachineryBlock {
     }
 
     @Override
+    protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
+        super.onPlace(state, level, pos, oldState, movedByPiston);
+        if (BETimeExtractor.PRODUCE_CONDITIONS.contains(level.getBlockState(pos.below()).getBlock())) {
+            if (level.getBlockEntity(pos) instanceof BETimeExtractor node) {
+                node.setCanProduce(true);
+            }
+        }
+    }
+
+    @Override
     public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new BETimeExtractor(pos, state);
     }

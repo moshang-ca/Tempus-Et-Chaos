@@ -14,6 +14,7 @@ import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.moshang.tempusetchaos.api.EntropyPipeFaceMode;
 import org.moshang.tempusetchaos.api.IEntropyPipeConnectable;
 import org.moshang.tempusetchaos.blockentity.network.EntropyPipeNet;
 import org.moshang.tempusetchaos.blockentity.network.PipeNetManager;
@@ -29,8 +30,11 @@ import java.util.UUID;
 public class BEEntropyPipe extends BlockEntity implements IEntropyPipeConnectable {
     public static final int CAPACITY = 30_000;
 
+    public static final double BASE_THROUGHPUT_MULTIPLIER = 1.0D;
+
     private static final String NET_UUID_KEY = "net_uuid";
     private static final String SHARE_KEY = "entropy_share";
+    private static final String FACE_MODE_KEY = "face_modes";
 
     @Getter
     @Setter
@@ -41,6 +45,13 @@ public class BEEntropyPipe extends BlockEntity implements IEntropyPipeConnectabl
     private boolean saved;
 
     private long pendingShare;
+
+    private final EntropyPipeFaceMode[] faceModes = createDefaultFaceModes();
+
+    // TODO: This value is maintained by the turbocharger mounting component; it is not persisted and needs to be reset by the mounting component after reloading.
+    @Getter
+    @Setter
+    private double throughputMultiplier = BASE_THROUGHPUT_MULTIPLIER;
 
     @SuppressWarnings("unchecked")
     private final BlockCapabilityCache<IFluidHandler, Direction>[] handlerCaches = new BlockCapabilityCache[6];
@@ -62,10 +73,37 @@ public class BEEntropyPipe extends BlockEntity implements IEntropyPipeConnectabl
         return share;
     }
 
+    public EntropyPipeFaceMode getFaceMode(Direction dir) {
+        return faceModes[dir.ordinal()];
+    }
+
+    public void setFaceMode(Direction dir, @Nullable EntropyPipeFaceMode mode) {
+        EntropyPipeFaceMode resolved = mode == null ? EntropyPipeFaceMode.NONE : mode;
+        if (faceModes[dir.ordinal()] == resolved) return;
+        faceModes[dir.ordinal()] = resolved;
+        setChanged();
+        refreshNetworkEndpoint(dir);
+    }
+
+    public void cycleFaceMode(Direction dir) {
+        setFaceMode(dir, getFaceMode(dir).next());
+    }
+
+    private static EntropyPipeFaceMode[] createDefaultFaceModes() {
+        EntropyPipeFaceMode[] modes = new EntropyPipeFaceMode[6];
+        Arrays.fill(modes, EntropyPipeFaceMode.NONE);
+        return modes;
+    }
+
     @Nullable
     public EntropyPipeNet getNet() {
         if (netUuid == null || !(level instanceof ServerLevel serverLevel)) return null;
         return PipeNetManager.get(serverLevel).getNetwork(netUuid);
+    }
+
+    private void refreshNetworkEndpoint(Direction dir) {
+        EntropyPipeNet network = getNet();
+        if (network != null) network.refreshEndpoint(this, dir);
     }
 
     @Nullable
@@ -80,8 +118,7 @@ public class BEEntropyPipe extends BlockEntity implements IEntropyPipeConnectabl
                     getBlockPos().relative(dir),
                     dir.getOpposite(),
                     () -> !this.isRemoved(),
-                    () -> {
-                    }
+                    () -> refreshNetworkEndpoint(dir)
             );
             handlerCaches[index] = cache;
         }
@@ -108,6 +145,15 @@ public class BEEntropyPipe extends BlockEntity implements IEntropyPipeConnectabl
             this.pendingShare = this.savedShare;
             this.saved = true;
         }
+        if (tag.contains(FACE_MODE_KEY)) {
+            int[] modes = tag.getIntArray(FACE_MODE_KEY);
+            EntropyPipeFaceMode[] values = EntropyPipeFaceMode.values();
+            for (int i = 0; i < faceModes.length && i < modes.length; i++) {
+                if (modes[i] >= 0 && modes[i] < values.length) {
+                    faceModes[i] = values[modes[i]];
+                }
+            }
+        }
         PipeNetManager.enqueue(this);
     }
 
@@ -123,6 +169,11 @@ public class BEEntropyPipe extends BlockEntity implements IEntropyPipeConnectabl
             this.saved = true;
         }
         tag.putLong(SHARE_KEY, this.savedShare);
+        int[] modes = new int[faceModes.length];
+        for (int i = 0; i < faceModes.length; i++) {
+            modes[i] = faceModes[i].ordinal();
+        }
+        tag.putIntArray(FACE_MODE_KEY, modes);
     }
 
     @ParametersAreNonnullByDefault

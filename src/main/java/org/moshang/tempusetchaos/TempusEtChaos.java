@@ -7,6 +7,7 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.ModelEvent;
 import org.moshang.tempusetchaos.block.BlockChrononNetCable;
+import org.moshang.tempusetchaos.block.BlockEntropyPipe;
 import org.moshang.tempusetchaos.registry.*;
 import org.slf4j.Logger;
 
@@ -29,5 +30,6 @@ public class TempusEtChaos {
 
     public void onModelLoaderRegister(ModelEvent.RegisterGeometryLoaders event) {
         event.register(ResourceLocation.fromNamespaceAndPath(MODID, "chronon_cable"), new BlockChrononNetCable.ChrononCableGeometryLoader());
+        event.register(ResourceLocation.fromNamespaceAndPath(MODID, "entropy_pipe"), new BlockEntropyPipe.EntropyPipeGeometryLoader());
     }
 }

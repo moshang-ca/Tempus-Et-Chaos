@@ -92,6 +92,5 @@ public class BEEntropyReactor extends BaseChrononNodeBlockEntity {
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
-        System.out.println(fluidHandler.writeToNBT(registries, tag));
     }
 }

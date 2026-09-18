@@ -56,7 +56,7 @@ public class ChrononNetworkData extends SavedData {
             if (network != null)
                 networkData.addNetwork(network);
         }
-        return new ChrononNetworkData(level);
+        return networkData;
     }
 
     @Getter

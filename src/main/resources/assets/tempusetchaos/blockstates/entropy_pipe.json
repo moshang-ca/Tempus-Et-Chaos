@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "tempusetchaos:block/entropy_pipe_model"
+    }
+  }
+}
