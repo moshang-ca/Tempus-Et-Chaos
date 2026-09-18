@@ -30,7 +30,7 @@ import org.jetbrains.annotations.NotNull;
 import org.moshang.tempusetchaos.TempusEtChaos;
 import org.moshang.tempusetchaos.api.ICableConnectable;
 import org.moshang.tempusetchaos.client.model.CableBakedModel;
-import org.moshang.tempusetchaos.data.ChrononNetwork;
+import org.moshang.tempusetchaos.blockentity.network.ChrononNetwork;
 import org.moshang.tempusetchaos.data.ChrononNetworkData;
 
 import javax.annotation.ParametersAreNonnullByDefault;

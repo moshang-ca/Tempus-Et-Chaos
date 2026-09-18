@@ -3,7 +3,7 @@ package org.moshang.tempusetchaos.api;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
-import org.moshang.tempusetchaos.data.ChrononNetwork;
+import org.moshang.tempusetchaos.blockentity.network.ChrononNetwork;
 import org.moshang.tempusetchaos.data.ChrononNetworkData;
 
 import java.util.Set;

@@ -1,4 +1,4 @@
-package org.moshang.tempusetchaos.data;
+package org.moshang.tempusetchaos.blockentity.network;
 
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
@@ -15,6 +15,7 @@ import org.moshang.tempusetchaos.api.ICableConnectable;
 import org.moshang.tempusetchaos.api.IChrononNode;
 import org.moshang.tempusetchaos.api.IChrononStorage;
 import org.moshang.tempusetchaos.block.BlockChrononNetCable;
+import org.moshang.tempusetchaos.data.ChrononNetworkData;
 
 import java.lang.ref.WeakReference;
 import java.util.*;

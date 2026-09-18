@@ -28,6 +28,8 @@ public class TECBlocks {
             registerItemLikeBlock("entropy_reactor", BlockEntropyReactor::new);
     public static final DeferredBlock<BlockEntropyNode> ENTROPY_NODE =
             registerItemLikeBlock("entropy_node", BlockEntropyNode::new);
+    public static final DeferredBlock<BlockEntropyPipe> ENTROPY_PIPE =
+            registerItemLikeBlock("entropy_pipe", BlockEntropyPipe::new);
 
     public static final DeferredBlock<LiquidBlock> GAS_ENTROPY =
             BLOCK_DR.register("gas_entropy_block", () -> new LiquidBlock(TECUtilities.GAS_ENTROPY_SOURCE.get(), BlockBehaviour.Properties.ofFullCopy(Blocks.WATER)));

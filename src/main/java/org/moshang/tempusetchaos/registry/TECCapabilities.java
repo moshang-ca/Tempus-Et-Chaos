@@ -16,6 +16,7 @@ public class TECCapabilities {
     public static void register(RegisterCapabilitiesEvent event) {
         event.registerBlockEntity(FLUID_ENTROPY, TECBlockEntities.ENTROPY_NODE_BE.get(), (be, side) -> be.getFluidHandler());
         event.registerBlockEntity(FLUID_ENTROPY, TECBlockEntities.ENTROPY_REACTOR_BE.get(), (be, side) -> be.getFluidHandler());
+        event.registerBlockEntity(FLUID_ENTROPY, TECBlockEntities.ENTROPY_PIPE_BE.get(), (be, side) -> be.getFluidHandler());
 
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, TECBlockEntities.ENTROPY_REACTOR_BE.get(), (be, side) -> be.getItemHandler());
     }
