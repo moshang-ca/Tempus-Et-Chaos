@@ -10,6 +10,7 @@ import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.jetbrains.annotations.Nullable;
 import org.moshang.tempusetchaos.TempusEtChaos;
+import org.moshang.tempusetchaos.item.EntropyWrench;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,6 +23,9 @@ public class TECItems {
 
     public static final DeferredItem<BucketItem> GAS_ENTROPY_BUCKET =
             ITEM_DR.register("gas_entropy_bucket", () -> new BucketItem(TECUtilities.GAS_ENTROPY_SOURCE.get(), new Item.Properties().craftRemainder(Items.BUCKET).stacksTo(1)));
+
+    public static final DeferredItem<Item> WRENCH =
+            ITEM_DR.register("wrench", () -> new EntropyWrench(new Item.Properties().stacksTo(1)));
 
     public static <T extends Block> void registerBlockItem(DeferredBlock<T> block, @Nullable Item.Properties properties)
     {

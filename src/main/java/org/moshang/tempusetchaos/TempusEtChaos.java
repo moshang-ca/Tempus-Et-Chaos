@@ -1,13 +1,16 @@
 package org.moshang.tempusetchaos;
 
 import com.mojang.logging.LogUtils;
+import net.minecraft.data.DataGenerator;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.ModelEvent;
+import net.neoforged.neoforge.data.event.GatherDataEvent;
 import org.moshang.tempusetchaos.block.BlockChrononNetCable;
 import org.moshang.tempusetchaos.block.BlockEntropyPipe;
+import org.moshang.tempusetchaos.datagen.LocalizationProvider;
 import org.moshang.tempusetchaos.registry.*;
 import org.slf4j.Logger;
 
@@ -18,6 +21,7 @@ public class TempusEtChaos {
 
     public TempusEtChaos(IEventBus modEventBus, ModContainer modContainer) {
         modEventBus.addListener(this::onModelLoaderRegister);
+        modEventBus.addListener(this::onLanguageGather);
 
         TECBlocks.BLOCK_DR.register(modEventBus);
         TECItems.ITEM_DR.register(modEventBus);
@@ -31,5 +35,11 @@ public class TempusEtChaos {
     public void onModelLoaderRegister(ModelEvent.RegisterGeometryLoaders event) {
         event.register(ResourceLocation.fromNamespaceAndPath(MODID, "chronon_cable"), new BlockChrononNetCable.ChrononCableGeometryLoader());
         event.register(ResourceLocation.fromNamespaceAndPath(MODID, "entropy_pipe"), new BlockEntropyPipe.EntropyPipeGeometryLoader());
+    }
+
+    public void onLanguageGather(GatherDataEvent event) {
+        DataGenerator gen = event.getGenerator();
+
+        gen.addProvider(event.includeClient(), new LocalizationProvider(gen.getPackOutput(), MODID, "en_us"));
     }
 }

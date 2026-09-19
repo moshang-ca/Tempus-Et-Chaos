@@ -1,5 +1,6 @@
 package org.moshang.tempusetchaos.blockentity.network;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import lombok.Getter;
@@ -19,6 +20,7 @@ import org.moshang.tempusetchaos.registry.TECUtilities;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -48,6 +50,7 @@ public class EntropyPipeNet {
     private final List<Endpoint> tickOutput = new ArrayList<>();
     private double cachedMultiplier = BEEntropyPipe.BASE_THROUGHPUT_MULTIPLIER;
     private final LongOpenHashSet dirtyChunks = new LongOpenHashSet();
+    private final Set<PendingFace> pendingFaces = new LinkedHashSet<>();
 
     @Getter
     private final ServerLevel level;
@@ -73,6 +76,7 @@ public class EntropyPipeNet {
         return new LongOpenHashSet(members);
     }
 
+    @CanIgnoreReturnValue
     public boolean join(BlockPos pos, long share) {
         long key = pos.asLong();
         if (!members.add(key)) return false;
@@ -107,7 +111,20 @@ public class EntropyPipeNet {
         removeEndpointsForOwner(key);
     }
 
-    public void refreshEndpoint(BEEntropyPipe pipe, Direction dir) {
+    public void invalidateFace(BEEntropyPipe pipe, Direction dir) {
+        pendingFaces.add(new PendingFace(pipe, dir));
+    }
+
+    private void applyPendingFaces() {
+        if (pendingFaces.isEmpty()) return;
+        List<PendingFace> batch = new ArrayList<>(pendingFaces);
+        pendingFaces.clear();
+        for (PendingFace face : batch) {
+            refreshEndpoint(face.pipe(), face.dir());
+        }
+    }
+
+    private void refreshEndpoint(BEEntropyPipe pipe, Direction dir) {
         long ownerKey = pipe.getBlockPos().asLong();
         if (!members.contains(ownerKey)) return;
         extractEndpoints.removeIf(e -> e.ownerKey() == ownerKey && e.dir() == dir);
@@ -176,6 +193,7 @@ public class EntropyPipeNet {
 
     public void tick(ServerLevel level) {
         if (members.isEmpty()) return;
+        applyPendingFaces();
 
         tickExtract.clear();
         tickExtract.addAll(extractEndpoints);
@@ -237,13 +255,6 @@ public class EntropyPipeNet {
         return filled;
     }
 
-    private record Endpoint(BEEntropyPipe pipe, Direction dir, long ownerKey) {
-        @Nullable
-        IFluidHandler handler() {
-            return pipe.getNeighborHandler(dir);
-        }
-    }
-
     public void markDirty(ServerLevel level) {
         dirtyChunks.clear();
         for (long key : members) {
@@ -302,5 +313,14 @@ public class EntropyPipeNet {
             if (id != null && manager.getNetwork(id) != null) found.add(id);
         }
         return found;
+    }
+
+    private record PendingFace(BEEntropyPipe pipe, Direction dir) { }
+
+    private record Endpoint(BEEntropyPipe pipe, Direction dir, long ownerKey) {
+        @Nullable
+        IFluidHandler handler() {
+            return pipe.getNeighborHandler(dir);
+        }
     }
 }

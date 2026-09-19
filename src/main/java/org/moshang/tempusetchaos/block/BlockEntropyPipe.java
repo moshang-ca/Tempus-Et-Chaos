@@ -21,6 +21,7 @@ import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -30,38 +31,43 @@ import net.neoforged.neoforge.client.model.geometry.IUnbakedGeometry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.moshang.tempusetchaos.TempusEtChaos;
-import org.moshang.tempusetchaos.api.IChrononNode;
-import org.moshang.tempusetchaos.api.IEntropyPipeConnectable;
+import org.moshang.tempusetchaos.api.EntropyPipeFaceMode;
+import org.moshang.tempusetchaos.api.IWrench;
+import org.moshang.tempusetchaos.api.IWrenchable;
 import org.moshang.tempusetchaos.blockentity.BEEntropyPipe;
 import org.moshang.tempusetchaos.blockentity.network.PipeNetManager;
-import org.moshang.tempusetchaos.client.model.CableBakedModel;
+import org.moshang.tempusetchaos.client.model.EntropyPipeBakedModel;
 import org.moshang.tempusetchaos.registry.TECCapabilities;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import static org.moshang.tempusetchaos.block.BlockChrononNetCable.CONNECTIONS;
 
 @ParametersAreNonnullByDefault
-public class BlockEntropyPipe extends Block implements IEntropyPipeConnectable, EntityBlock {
+public class BlockEntropyPipe extends Block implements EntityBlock, IWrenchable {
+    private static final Direction[] BIT_ORDER = Direction.values();
+
+    private static final float CENTER_MIN = 5f;
+    private static final float CENTER_MAX = 11f;
+    private static final float TIP_LENGTH = 2f;
+    private static final float ARM_INSET = 1f;
+    private static final float TIP_EXPAND = 1f;
+
+    private static final VoxelShape CORE = Block.box(5, 5, 5, 11, 11, 11);
     private static final VoxelShape[] SHAPES = new VoxelShape[64];
 
+    private static final Map<Integer, VoxelShape> MODE_SHAPES = new ConcurrentHashMap<>();
+
     static {
-        VoxelShape core = Block.box(6, 6, 6, 10, 10, 10);
-        VoxelShape[] arms = {
-                Block.box(6, 6, 0, 10, 10, 6),
-                Block.box(6, 6, 10, 10, 10, 16),
-                Block.box(10, 6, 6, 16, 10, 10),
-                Block.box(0, 6, 6, 6, 10, 10),
-                Block.box(6, 10, 6, 10, 16, 10),
-                Block.box(6, 0, 6, 10, 6, 10)
-        };
         for (int mask = 0; mask < 64; mask++) {
-            VoxelShape shape = core;
+            VoxelShape shape = CORE;
             for (int i = 0; i < 6; i++) {
                 if ((mask & (1 << i)) != 0) {
-                    shape = Shapes.or(shape, arms[i]);
+                    shape = Shapes.or(shape, armBox(BIT_ORDER[i], 0f));
                 }
             }
             SHAPES[mask] = shape;
@@ -98,12 +104,50 @@ public class BlockEntropyPipe extends Block implements IEntropyPipeConnectable, 
     }
 
     @Override
+    public boolean onInteraction(Level level, BlockState state, IWrench.WrenchHit hit) {
+        BlockPos pos = hit.pos();
+        if (level.getBlockEntity(pos) instanceof BEEntropyPipe pipe) {
+            Direction face = nearestConnectedFace(level, pos, level.getBlockState(pos), hit.location());
+            if (face == null) return false;
+            pipe.cycleFaceMode(face);
+            return true;
+        }
+        return false;
+    }
+
+    private static Direction nearestConnectedFace(Level level, BlockPos pos, BlockState state, Vec3 location) {
+        double lx = location.x - pos.getX();
+        double ly = location.y - pos.getY();
+        double lz = location.z - pos.getZ();
+        Direction best = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (Direction dir : Direction.values()) {
+            if (!isConnected(state, dir)) continue;
+            if (level.getBlockEntity(pos.relative(dir)) instanceof BEEntropyPipe) continue;
+            double distance = switch (dir) {
+                case DOWN -> ly;
+                case UP -> 1.0D - ly;
+                case NORTH -> lz;
+                case SOUTH -> 1.0D - lz;
+                case WEST -> lx;
+                case EAST -> 1.0D - lx;
+            };
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                best = dir;
+            }
+        }
+        return best;
+    }
+
+    @Override
     protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock, BlockPos neighborPos, boolean movedByPiston) {
         super.neighborChanged(state, level, pos, neighborBlock, neighborPos, movedByPiston);
         if (level.isClientSide) return;
         for (Direction dir : Direction.values()) {
             if (isConnected(state, dir) != shouldPipeConnect(level, pos, dir)) {
-                updateConnections(level, pos);
+                BlockPos delta = neighborPos.subtract(pos);
+                updateConnections(level, pos, Direction.fromDelta(delta.getX(), delta.getY(), delta.getZ()));
                 return;
             }
         }
@@ -112,7 +156,61 @@ public class BlockEntropyPipe extends Block implements IEntropyPipeConnectable, 
     @Override
     @NotNull
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return SHAPES[state.getValue(CONNECTIONS) & 0x3F];
+        int connections = state.getValue(CONNECTIONS) & 0x3F;
+        int modes = level.getBlockEntity(pos) instanceof BEEntropyPipe pipe ? pipe.encodeFaceModes() : 0;
+        if (modes == 0) return SHAPES[connections];
+
+        int key = (connections << 12) | modes;
+        VoxelShape cached = MODE_SHAPES.get(key);
+        if (cached != null) return cached;
+
+        VoxelShape built = buildShape(connections, modes);
+        if (MODE_SHAPES.size() > 1024) MODE_SHAPES.clear();
+        MODE_SHAPES.put(key, built);
+        return built;
+    }
+
+    private static VoxelShape buildShape(int connections, int modes) {
+        VoxelShape shape = CORE;
+        for (int i = 0; i < 6; i++) {
+            if ((connections & (1 << i)) == 0) continue;
+            Direction dir = BIT_ORDER[i];
+            int mode = (modes >>> (dir.ordinal() * 2)) & 0b11;
+            if (mode == EntropyPipeFaceMode.EXTRACT.ordinal()) {
+                shape = Shapes.or(shape, armBox(dir, ARM_INSET), tipBox(dir, true));
+            } else if (mode == EntropyPipeFaceMode.OUTPUT.ordinal()) {
+                shape = Shapes.or(shape, armBox(dir, ARM_INSET), tipBox(dir, false));
+            } else {
+                shape = Shapes.or(shape, armBox(dir, 0f));
+            }
+        }
+        return shape;
+    }
+
+    private static VoxelShape armBox(Direction dir, float inset) {
+        return switch (dir) {
+            case NORTH -> Block.box(CENTER_MIN, CENTER_MIN, inset, CENTER_MAX, CENTER_MAX, CENTER_MIN);
+            case SOUTH -> Block.box(CENTER_MIN, CENTER_MIN, CENTER_MAX, CENTER_MAX, CENTER_MAX, 16 - inset);
+            case WEST  -> Block.box(inset, CENTER_MIN, CENTER_MIN, CENTER_MIN, CENTER_MAX, CENTER_MAX);
+            case EAST  -> Block.box(CENTER_MAX, CENTER_MIN, CENTER_MIN, 16 - inset, CENTER_MAX, CENTER_MAX);
+            case DOWN  -> Block.box(CENTER_MIN, inset, CENTER_MIN, CENTER_MAX, CENTER_MIN, CENTER_MAX);
+            case UP    -> Block.box(CENTER_MIN, CENTER_MAX, CENTER_MIN, CENTER_MAX, 16 - inset, CENTER_MAX);
+        };
+    }
+
+    private static VoxelShape tipBox(Direction dir, boolean flared) {
+        float expand = flared ? TIP_EXPAND : -TIP_EXPAND;
+        float lo = CENTER_MIN - expand;
+        float hi = CENTER_MAX + expand;
+        float t = TIP_LENGTH;
+        return switch (dir) {
+            case NORTH -> Block.box(lo, lo, 0, hi, hi, t);
+            case SOUTH -> Block.box(lo, lo, 16 - t, hi, hi, 16);
+            case WEST  -> Block.box(0, lo, lo, t, hi, hi);
+            case EAST  -> Block.box(16 - t, lo, lo, 16, hi, hi);
+            case DOWN  -> Block.box(lo, 0, lo, hi, t, hi);
+            case UP    -> Block.box(lo, 16 - t, lo, hi, 16, hi);
+        };
     }
 
     @Override
@@ -122,15 +220,33 @@ public class BlockEntropyPipe extends Block implements IEntropyPipeConnectable, 
 
     private void updateConnections(Level level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
+        BEEntropyPipe pipe = (BEEntropyPipe) level.getBlockEntity(pos);
+        assert pipe != null;
         if (!(state.getBlock() instanceof BlockEntropyPipe)) return;
 
         BlockState newState = state;
         for (Direction dir : Direction.values()) {
-            newState = BlockChrononNetCable.setConnection(newState, dir, shouldPipeConnect(level, pos, dir));
+            boolean connect = shouldPipeConnect(level, pos, dir);
+            if (!connect) pipe.setFaceMode(dir, EntropyPipeFaceMode.NONE);
+            newState = BlockChrononNetCable.setConnection(newState, dir, connect);
         }
         if (!newState.equals(state)) {
             level.setBlock(pos, newState, 3);
         }
+    }
+
+    private void updateConnections(Level level, BlockPos pos, Direction dir) {
+        BlockState state = level.getBlockState(pos);
+        BEEntropyPipe pipe = (BEEntropyPipe) level.getBlockEntity(pos);
+        assert pipe != null;
+        if (!(state.getBlock() instanceof BlockEntropyPipe)) return;
+
+        BlockState newState = state;
+        boolean connect = shouldPipeConnect(level, pos, dir);
+        if (!connect) pipe.setFaceMode(dir, EntropyPipeFaceMode.NONE);
+        newState = BlockChrononNetCable.setConnection(newState, dir, connect);
+        if (!newState.equals(state))
+            level.setBlock(pos, newState, 3);
     }
 
     public static boolean isConnected(BlockState state, Direction dir) {
@@ -141,14 +257,13 @@ public class BlockEntropyPipe extends Block implements IEntropyPipeConnectable, 
         BlockPos neighborPos = pos.relative(dir);
         BlockEntity neighbor = level.getBlockEntity(neighborPos);
         BlockState neighborState = level.getBlockState(neighborPos);
-        if (level.getCapability(TECCapabilities.FLUID_ENTROPY, neighborPos, neighborState, neighbor, dir) == null)
-            return false;
-        if (neighbor instanceof IEntropyPipeConnectable connectable)
-            return connectable.canPipeConnect(dir.getOpposite());
-        if (neighbor instanceof IChrononNode)
-            return true;
-        return neighborState.getBlock() instanceof IEntropyPipeConnectable connectable
-                && connectable.canPipeConnect(dir.getOpposite());
+        return level.getCapability(TECCapabilities.FLUID_ENTROPY, neighborPos, neighborState, neighbor, dir) != null;
+//        if (neighbor instanceof IEntropyPipeConnectable connectable)
+//            return connectable.canPipeConnect(dir.getOpposite());
+//        if (neighbor instanceof IChrononNode)
+//            return true;
+//        return neighborState.getBlock() instanceof IEntropyPipeConnectable connectable
+//                && connectable.canPipeConnect(dir.getOpposite());
     }
 
     @ParametersAreNonnullByDefault
@@ -157,7 +272,7 @@ public class BlockEntropyPipe extends Block implements IEntropyPipeConnectable, 
         @NotNull
         public BakedModel bake(IGeometryBakingContext context, ModelBaker baker, Function<Material, TextureAtlasSprite> spriteGetter, ModelState modelState, ItemOverrides overrides) {
             TextureAtlasSprite sprite = spriteGetter.apply(new Material(TextureAtlas.LOCATION_BLOCKS, ResourceLocation.fromNamespaceAndPath(TempusEtChaos.MODID, "block/entropy_pipe")));
-            return new CableBakedModel(sprite, new float[]{ 4, 4, 4, 12, 12, 12 }, 4, 12);
+            return new EntropyPipeBakedModel(sprite, new float[]{ 5, 5, 5, 11, 11, 11 }, 5, 11);
         }
     }
 

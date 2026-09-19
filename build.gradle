@@ -22,6 +22,9 @@ repositories {
     maven {
         url = "https://neoforged.forgecdn.net/mojang-meta"
     }
+    maven {
+        url = "https://api.modrinth.com/maven"
+    }
 }
 
 base {
@@ -79,9 +82,9 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 
 dependencies {
-    // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
-    // compileOnly "mezz.jei:jei-${mc_version}-forge-api:${jei_version}"
-    // runtimeOnly "mezz.jei:jei-${mc_version}-forge:${jei_version}"
+    // Jade
+    compileOnly "maven.modrinth:nvQzSEkH:eYz2YBGT"
+    runtimeOnly "maven.modrinth:nvQzSEkH:eYz2YBGT"
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {

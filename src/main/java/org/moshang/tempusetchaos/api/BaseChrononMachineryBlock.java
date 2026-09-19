@@ -15,7 +15,7 @@ import org.jetbrains.annotations.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 @ParametersAreNonnullByDefault
-public abstract class BaseChrononMachineryBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public abstract class BaseChrononMachineryBlock extends HorizontalDirectionalBlock implements EntityBlock, IWrenchable {
     public BaseChrononMachineryBlock(Properties properties) {
         super(properties);
         this.registerDefaultState(this.stateDefinition.any().setValue(FACING, Direction.NORTH));

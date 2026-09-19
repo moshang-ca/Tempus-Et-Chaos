@@ -210,7 +210,7 @@ public class ChrononNetwork implements IChrononStorage {
 
     public CompoundTag serialize() {
         CompoundTag tag = new CompoundTag();
-        // TODO: We should design a strategy to ensure the network data on the dick is valid
+        // TODO: We should design a strategy to ensure the network data on the disk is valid
         tag.putBoolean("has_loaded_nearest", true);
         tag.putUUID("uuid", uuid);
         tag.putLong("chronon_stored", chrononStored);

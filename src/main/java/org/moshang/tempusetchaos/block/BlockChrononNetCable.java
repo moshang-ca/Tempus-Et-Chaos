@@ -42,24 +42,18 @@ import java.util.function.Function;
 public class BlockChrononNetCable extends Block implements ICableConnectable {
     public static final IntegerProperty CONNECTIONS = IntegerProperty.create("connections", 0, 63);
 
-    private static final int BIT_NORTH = 1;
-    private static final int BIT_SOUTH = 1 << 1;
-    private static final int BIT_EAST  = 1 << 2;
-    private static final int BIT_WEST  = 1 << 3;
-    private static final int BIT_UP    = 1 << 4;
-    private static final int BIT_DOWN  = 1 << 5;
-
     private static final VoxelShape CORE = Block.box(6, 6, 6, 10, 10, 10);
-    private static final VoxelShape NORTH = Block.box(6, 6, 0, 10, 10, 6);
-    private static final VoxelShape SOUTH = Block.box(6, 6, 10, 10, 10, 16);
-    private static final VoxelShape EAST  = Block.box(10, 6, 6, 16, 10, 10);
-    private static final VoxelShape WEST  = Block.box(0, 6, 6, 6, 10, 10);
-    private static final VoxelShape UP    = Block.box(6, 10, 6, 10, 16, 10);
-    private static final VoxelShape DOWN  = Block.box(6, 0, 6, 10, 6, 10);
     private static final VoxelShape[] SHAPES = new VoxelShape[64];
 
     static {
-        VoxelShape[] tmp = { NORTH, SOUTH, EAST, WEST, UP, DOWN };
+        VoxelShape[] tmp = {
+                Block.box(6, 0, 6, 10, 6, 10),
+                Block.box(6, 10, 6, 10, 16, 10),
+                Block.box(6, 6, 0, 10, 10, 6),
+                Block.box(6, 6, 10, 10, 10, 16),
+                Block.box(0, 6, 6, 6, 10, 10),
+                Block.box(10, 6, 6, 16, 10, 10)
+        };
         for (int mask = 0; mask < 64; mask++) {
             VoxelShape shape = CORE;
             for (int i = 0; i < 6; i++) {
@@ -160,14 +154,7 @@ public class BlockChrononNetCable extends Block implements ICableConnectable {
 
     public static boolean isConnected(BlockState state, Direction dir) {
         int mask = state.getValue(CONNECTIONS);
-        return switch (dir) {
-            case NORTH -> (mask & BIT_NORTH) != 0;
-            case SOUTH -> (mask & BIT_SOUTH) != 0;
-            case EAST  -> (mask & BIT_EAST) != 0;
-            case WEST  -> (mask & BIT_WEST) != 0;
-            case UP    -> (mask & BIT_UP) != 0;
-            case DOWN  -> (mask & BIT_DOWN) != 0;
-        };
+        return (mask & (1 << dir.get3DDataValue())) != 0;
     }
 
     public static boolean shouldConnect(Level level, BlockPos pos, Direction dir) {
@@ -180,18 +167,10 @@ public class BlockChrononNetCable extends Block implements ICableConnectable {
 
     public static BlockState setConnection(BlockState state, Direction dir, boolean connect) {
         int mask = state.getValue(CONNECTIONS);
-        int bit = switch (dir) {
-            case NORTH -> BIT_NORTH;
-            case SOUTH -> BIT_SOUTH;
-            case EAST  -> BIT_EAST;
-            case WEST  -> BIT_WEST;
-            case UP    -> BIT_UP;
-            case DOWN  -> BIT_DOWN;
-        };
         if (connect) {
-            mask |= bit;
+            mask |= (1 << dir.get3DDataValue());
         } else {
-            mask &= ~bit;
+            mask &= ~(1 << dir.get3DDataValue());
         }
         return state.setValue(CONNECTIONS, mask);
     }

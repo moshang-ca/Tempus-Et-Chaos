@@ -2,22 +2,30 @@ package org.moshang.tempusetchaos.blockentity;
 
 import lombok.Getter;
 import lombok.Setter;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.capabilities.BlockCapabilityCache;
+import net.neoforged.neoforge.client.model.data.ModelData;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.moshang.tempusetchaos.api.EntropyPipeFaceMode;
-import org.moshang.tempusetchaos.api.IEntropyPipeConnectable;
 import org.moshang.tempusetchaos.blockentity.network.EntropyPipeNet;
 import org.moshang.tempusetchaos.blockentity.network.PipeNetManager;
+import org.moshang.tempusetchaos.client.model.EntropyPipeModelData;
 import org.moshang.tempusetchaos.registry.TECBlockEntities;
 import org.moshang.tempusetchaos.registry.TECCapabilities;
 import org.moshang.tempusetchaos.registry.TECUtilities;
@@ -27,7 +35,7 @@ import java.util.Arrays;
 import java.util.UUID;
 
 @ParametersAreNonnullByDefault
-public class BEEntropyPipe extends BlockEntity implements IEntropyPipeConnectable {
+public class BEEntropyPipe extends BlockEntity {
     public static final int CAPACITY = 30_000;
 
     public static final double BASE_THROUGHPUT_MULTIPLIER = 1.0D;
@@ -82,6 +90,11 @@ public class BEEntropyPipe extends BlockEntity implements IEntropyPipeConnectabl
         if (faceModes[dir.ordinal()] == resolved) return;
         faceModes[dir.ordinal()] = resolved;
         setChanged();
+        if (level instanceof ServerLevel serverLevel) {
+            serverLevel.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), Block.UPDATE_ALL);
+        } else {
+            refreshClientModel();
+        }
         refreshNetworkEndpoint(dir);
     }
 
@@ -103,7 +116,13 @@ public class BEEntropyPipe extends BlockEntity implements IEntropyPipeConnectabl
 
     private void refreshNetworkEndpoint(Direction dir) {
         EntropyPipeNet network = getNet();
-        if (network != null) network.refreshEndpoint(this, dir);
+        if (network != null) network.invalidateFace(this, dir);
+    }
+
+    private void onNeighborHandlerInvalidated(Direction dir) {
+        handlerCaches[dir.ordinal()] = null;
+        EntropyPipeNet network = getNet();
+        if (network != null) network.invalidateFace(this, dir);
     }
 
     @Nullable
@@ -118,7 +137,7 @@ public class BEEntropyPipe extends BlockEntity implements IEntropyPipeConnectabl
                     getBlockPos().relative(dir),
                     dir.getOpposite(),
                     () -> !this.isRemoved(),
-                    () -> refreshNetworkEndpoint(dir)
+                    () -> onNeighborHandlerInvalidated(dir)
             );
             handlerCaches[index] = cache;
         }
@@ -174,6 +193,48 @@ public class BEEntropyPipe extends BlockEntity implements IEntropyPipeConnectabl
             modes[i] = faceModes[i].ordinal();
         }
         tag.putIntArray(FACE_MODE_KEY, modes);
+    }
+
+    @Override
+    @NotNull
+    public ModelData getModelData() {
+        if (level == null || !level.isClientSide) return ModelData.EMPTY;
+        return EntropyPipeModelData.of(encodeFaceModes());
+    }
+
+    @Override
+    @NotNull
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        return saveWithoutMetadata(registries);
+    }
+
+    @Nullable
+    @Override
+    public Packet<ClientGamePacketListener> getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
+    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket packet, HolderLookup.Provider registries) {
+        super.onDataPacket(net, packet, registries);
+        refreshClientModel();
+    }
+
+    private void refreshClientModel() {
+        if (level == null || !level.isClientSide) return;
+        requestModelDataUpdate();
+        if (level instanceof ClientLevel clientLevel) {
+            SectionPos section = SectionPos.of(getBlockPos());
+            clientLevel.setSectionDirtyWithNeighbors(section.x(), section.y(), section.z());
+        }
+    }
+
+    public int encodeFaceModes() {
+        int modes = 0;
+        for (int i = 0; i < faceModes.length; i++) {
+            modes |= (faceModes[i].ordinal() & 0b11) << (i * 2);
+        }
+        return modes;
     }
 
     @ParametersAreNonnullByDefault
