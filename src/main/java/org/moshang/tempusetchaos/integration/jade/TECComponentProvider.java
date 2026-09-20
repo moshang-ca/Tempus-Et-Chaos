@@ -1,33 +1,46 @@
 package org.moshang.tempusetchaos.integration.jade;
 
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.material.Fluid;
+import net.neoforged.neoforge.fluids.FluidStack;
 import org.moshang.tempusetchaos.TempusEtChaos;
+import org.moshang.tempusetchaos.registry.TECUtilities;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IComponentProvider;
 import snownee.jade.api.ITooltip;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.fluid.JadeFluidObject;
-import snownee.jade.impl.ui.ElementHelper;
+import snownee.jade.api.ui.BoxStyle;
+import snownee.jade.api.ui.IElementHelper;
+import snownee.jade.api.ui.ProgressStyle;
 
 public class TECComponentProvider implements IComponentProvider<BlockAccessor> {
     public static final TECComponentProvider INSTANCE = new TECComponentProvider();
 
     @Override
-    public void appendTooltip(ITooltip iTooltip, BlockAccessor accessor, IPluginConfig iPluginConfig) {
-        CompoundTag data = accessor.getServerData();
-        if (data.contains("entropy_fluid")) {
-            CompoundTag fluidTag = data.getCompound("entropy_fluid");
-            int stored = fluidTag.getInt("stored");
-            int capacity = fluidTag.getInt("capacity");
+    public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
+        CompoundTag serverData = accessor.getServerData();
+        if (!serverData.contains(TECServerDataProvider.TAG)) return;
 
-            JadeFluidObject fluidObject = JadeFluidObject.of(
-                    BuiltInRegistries.FLUID.get(ResourceLocation.parse(fluidTag.getString("fluid"))),
-                    stored);
+        CompoundTag data = serverData.getCompound(TECServerDataProvider.TAG);
+        int stored = data.getInt(TECServerDataProvider.STORED);
+        int capacity = data.getInt(TECServerDataProvider.CAPACITY);
+        if (capacity <= 0) return;
 
-            iTooltip.append(ElementHelper.INSTANCE.fluid(fluidObject));
-        }
+        IElementHelper helper = IElementHelper.get();
+        Fluid gas = TECUtilities.GAS_ENTROPY_SOURCE.get();
+        Component name = new FluidStack(gas, 1).getHoverName();
+        Component text = Component.translatable(
+                "jade.tempusetchaos.entropy_amount", name, stored, capacity);
+        float ratio = Math.min(1f, stored / (float) capacity);
+
+        ProgressStyle pStyle = helper.progressStyle()
+                        .textColor(0xFFFFFF)
+                        .overlay(helper.sprite(ResourceLocation.fromNamespaceAndPath(TempusEtChaos.MODID, "gas_entropy"), 22, 16));
+        // tooltip.add(helper.fluid(JadeFluidObject.of(gas, stored)));
+        tooltip.add(helper.progress(ratio, text, pStyle, BoxStyle.getNestedBox(), true));
     }
 
     @Override

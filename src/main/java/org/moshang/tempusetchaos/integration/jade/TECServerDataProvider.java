@@ -11,18 +11,20 @@ import snownee.jade.api.IServerDataProvider;
 public class TECServerDataProvider implements IServerDataProvider<BlockAccessor> {
     public static final TECServerDataProvider INSTANCE = new TECServerDataProvider();
 
-    @Override
-    public void appendServerData(CompoundTag compoundTag, BlockAccessor blockAccessor) {
-        IFluidHandler fluidHandler = blockAccessor.getLevel()
-                .getCapability(TECCapabilities.FLUID_ENTROPY, blockAccessor.getPosition(), null);
-        if (fluidHandler != null) {
-            CompoundTag fluidTag = new CompoundTag();
-            fluidTag.putString("fluid", fluidHandler.getFluidInTank(0).getFluidHolder().getRegisteredName());
-            fluidTag.putInt("stored", fluidHandler.getFluidInTank(0).getAmount());
-            fluidTag.putInt("capacity", fluidHandler.getTankCapacity(0));
+    public static final String TAG = "entropy_fluid";
+    public static final String STORED = "stored";
+    public static final String CAPACITY = "capacity";
 
-            compoundTag.put("entropy_fluid", fluidTag);
-        }
+    @Override
+    public void appendServerData(CompoundTag tag, BlockAccessor accessor) {
+        IFluidHandler handler = accessor.getLevel()
+                .getCapability(TECCapabilities.FLUID_ENTROPY, accessor.getPosition(), null);
+        if (handler == null || handler.getTanks() <= 0) return;
+
+        CompoundTag data = new CompoundTag();
+        data.putInt(STORED, handler.getFluidInTank(0).getAmount());
+        data.putInt(CAPACITY, handler.getTankCapacity(0));
+        tag.put(TAG, data);
     }
 
     @Override
