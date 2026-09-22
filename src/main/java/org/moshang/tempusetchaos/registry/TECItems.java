@@ -10,6 +10,7 @@ import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.jetbrains.annotations.Nullable;
 import org.moshang.tempusetchaos.TempusEtChaos;
+import org.moshang.tempusetchaos.item.EntropyCoolingModule;
 import org.moshang.tempusetchaos.item.EntropyWrench;
 
 import java.util.HashMap;
@@ -26,6 +27,8 @@ public class TECItems {
 
     public static final DeferredItem<Item> WRENCH =
             ITEM_DR.register("wrench", () -> new EntropyWrench(new Item.Properties().stacksTo(1)));
+    public static final DeferredItem<Item> ENTROPY_COOLING_MODULE =
+            ITEM_DR.register("entropy_cooling_module", () -> new EntropyCoolingModule(new Item.Properties().durability(600)));
 
     public static <T extends Block> void registerBlockItem(DeferredBlock<T> block, @Nullable Item.Properties properties)
     {

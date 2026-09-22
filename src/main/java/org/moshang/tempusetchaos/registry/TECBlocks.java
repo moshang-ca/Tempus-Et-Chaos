@@ -7,6 +7,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.moshang.tempusetchaos.TempusEtChaos;
+import org.moshang.tempusetchaos.api.VesselTier;
 import org.moshang.tempusetchaos.block.*;
 
 import java.util.function.Function;
@@ -30,6 +31,16 @@ public class TECBlocks {
             registerItemLikeBlock("entropy_node", BlockEntropyNode::new);
     public static final DeferredBlock<BlockEntropyPipe> ENTROPY_PIPE =
             registerItemLikeBlock("entropy_pipe", BlockEntropyPipe::new);
+    public static final DeferredBlock<BlockEntropyVessel> IRON_ENTROPY_VESSEL =
+            registerItemLikeBlock("iron_entropy_vessel", (properties) -> new BlockEntropyVessel(properties, VesselTier.IRON));
+    public static final DeferredBlock<BlockEntropyVessel> REINFORCE_ENTROPY_VESSEL =
+            registerItemLikeBlock("reinfroce_entropy_vessel", (properties) -> new BlockEntropyVessel(properties, VesselTier.REINFORCED));
+    public static final DeferredBlock<BlockEntropyVessel> OBSIDIAN_ENTROPY_VESSEL =
+            registerItemLikeBlock("obsidian_entropy_vessel", (properties) -> new BlockEntropyVessel(properties, VesselTier.OBSIDIAN));
+    public static final DeferredBlock<BlockEntropyVessel> NETHERITE_ENTROPY_VESSEL =
+            registerItemLikeBlock("netherite_entropy_vessel", (properties) -> new BlockEntropyVessel(properties, VesselTier.NETHERITE));
+    public static final DeferredBlock<BlockEntropyVessel> CREATIVE_ENTROPY_VESSEL =
+            registerItemLikeBlock("creative_entropy_vessel", (properties) -> new BlockEntropyVessel(properties, VesselTier.CREATIVE));
 
     public static final DeferredBlock<LiquidBlock> GAS_ENTROPY =
             BLOCK_DR.register("gas_entropy_block", () -> new LiquidBlock(TECUtilities.GAS_ENTROPY_SOURCE.get(), BlockBehaviour.Properties.ofFullCopy(Blocks.WATER)));

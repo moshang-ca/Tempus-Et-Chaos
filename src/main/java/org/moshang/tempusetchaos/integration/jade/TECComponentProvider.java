@@ -11,13 +11,12 @@ import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IComponentProvider;
 import snownee.jade.api.ITooltip;
 import snownee.jade.api.config.IPluginConfig;
-import snownee.jade.api.fluid.JadeFluidObject;
 import snownee.jade.api.ui.BoxStyle;
 import snownee.jade.api.ui.IElementHelper;
 import snownee.jade.api.ui.ProgressStyle;
 
-public class TECComponentProvider implements IComponentProvider<BlockAccessor> {
-    public static final TECComponentProvider INSTANCE = new TECComponentProvider();
+public enum TECComponentProvider implements IComponentProvider<BlockAccessor> {
+    INSTANCE;
 
     @Override
     public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {

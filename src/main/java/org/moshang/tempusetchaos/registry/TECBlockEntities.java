@@ -25,6 +25,15 @@ public class TECBlockEntities {
             BE_TYPE_DR.register("entropy_reactor", () -> BlockEntityType.Builder.of(BEEntropyReactor::new, TECBlocks.ENTROPY_REACTOR.get()).build(null));
     public static final Supplier<BlockEntityType<BEEntropyNode>> ENTROPY_NODE_BE =
             BE_TYPE_DR.register("entropy_node", () -> BlockEntityType.Builder.of(BEEntropyNode::new, TECBlocks.ENTROPY_NODE.get()).build(null));
+    public static final Supplier<BlockEntityType<BEEntropyVessel>> ENTROPY_VESSEL_BE =
+            BE_TYPE_DR.register("entropy_vessel", () -> BlockEntityType.Builder
+                    .of(BEEntropyVessel::new,
+                        TECBlocks.IRON_ENTROPY_VESSEL.get(),
+                        TECBlocks.REINFORCE_ENTROPY_VESSEL.get(),
+                        TECBlocks.OBSIDIAN_ENTROPY_VESSEL.get(),
+                        TECBlocks.NETHERITE_ENTROPY_VESSEL.get(),
+                        TECBlocks.CREATIVE_ENTROPY_VESSEL.get())
+                    .build(null));
 
     public static final Supplier<BlockEntityType<BEEntropyPipe>> ENTROPY_PIPE_BE =
             BE_TYPE_DR.register("entropy_pipe", () -> BlockEntityType.Builder.of(BEEntropyPipe::new, TECBlocks.ENTROPY_PIPE.get()).build(null));

@@ -8,8 +8,8 @@ import org.moshang.tempusetchaos.registry.TECCapabilities;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IServerDataProvider;
 
-public class TECServerDataProvider implements IServerDataProvider<BlockAccessor> {
-    public static final TECServerDataProvider INSTANCE = new TECServerDataProvider();
+public enum TECServerDataProvider implements IServerDataProvider<BlockAccessor> {
+    INSTANCE;
 
     public static final String TAG = "entropy_fluid";
     public static final String STORED = "stored";
