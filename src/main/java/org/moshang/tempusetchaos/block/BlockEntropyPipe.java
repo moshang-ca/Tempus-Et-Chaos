@@ -64,7 +64,6 @@ public class BlockEntropyPipe extends Block implements EntityBlock, IWrenchable 
         for (int mask = 0; mask < 64; mask++) {
             VoxelShape shape = CORE;
             for (Direction dir : Direction.values()) {
-                // 连接位序由 BlockChrononNetCable 定义（1 << get3DDataValue()），这里跟着走，不另立一份顺序表
                 if ((mask & (1 << dir.get3DDataValue())) != 0) {
                     shape = Shapes.or(shape, armBox(dir, 0f));
                 }
@@ -172,9 +171,7 @@ public class BlockEntropyPipe extends Block implements EntityBlock, IWrenchable 
     private static VoxelShape buildShape(int connections, int modes) {
         VoxelShape shape = CORE;
         for (Direction dir : Direction.values()) {
-            // 连接位与 BlockChrononNetCable 同源，用 get3DDataValue() 取
             if ((connections & (1 << dir.get3DDataValue())) == 0) continue;
-            // 面模式的两位按 Direction.ordinal() 排布，对应 BEEntropyPipe#encodeFaceModes
             int mode = (modes >>> (dir.ordinal() * 2)) & 0b11;
             if (mode == EntropyPipeFaceMode.EXTRACT.ordinal()) {
                 shape = Shapes.or(shape, armBox(dir, ARM_INSET), tipBox(dir, true));

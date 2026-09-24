@@ -191,6 +191,10 @@ public class BEEntropyVessel extends BlockEntity {
                 + (coolingModules[3] > 0 ? 1 : 0);
     }
 
+    public int getCoolingDuration(int dir) {
+        return coolingModules[dir];
+    }
+
     public int coolingFactorScaled() {
         return SCALE - Math.min(COOLING_MAX_CUT, coolingCount() * COOLING_PER_TUBE);
     }
