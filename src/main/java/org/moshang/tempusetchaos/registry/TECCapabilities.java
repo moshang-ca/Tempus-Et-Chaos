@@ -26,15 +26,20 @@ public class TECCapabilities {
         event.registerBlockEntity(FLUID_ENTROPY, TECBlockEntities.ENTROPY_REACTOR_BE.get(), (be, side) -> be.getFluidHandler());
         event.registerBlockEntity(FLUID_ENTROPY, TECBlockEntities.ENTROPY_PIPE_BE.get(), (be, side) -> be.getFluidHandler());
         event.registerBlockEntity(FLUID_ENTROPY, TECBlockEntities.ENTROPY_VESSEL_BE.get(), (be, side) -> be.getFluidHandler());
+        event.registerBlockEntity(FLUID_ENTROPY, TECBlockEntities.ENTROPY_FORGE_BE.get(), (be, side) -> be.getEntropyTank());
 
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, TECBlockEntities.ENTROPY_FORGE_BE.get(), (be, side) -> be.getItemHandler());
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, TECBlockEntities.ENTROPY_REACTOR_BE.get(), (be, side) -> be.getItemHandler());
+
+        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, TECBlockEntities.ENTROPY_FORGE_BE.get(), (be, side) -> be.getEnergyStorage());
 
         event.registerItem(WRENCH, (stack, context) -> new IWrench.WrenchHandler(), TECItems.WRENCH.get());
 
         event.registerBlock(
                 WRENCHABLE, (lvl, p, st, be, ctx) -> st.getBlock() instanceof IWrenchable wrenchable ? wrenchable : null,
                 TECBlocks.ACCELERATOR.get(), TECBlocks.ENTROPY_NODE.get(), TECBlocks.ENTROPY_REACTOR.get(), TECBlocks.REDUCER.get(), TECBlocks.TIME_EXTRACTOR.get(),
-                TECBlocks.ENTROPY_PIPE.get()
+                TECBlocks.ENTROPY_PIPE.get(), TECBlocks.IRON_ENTROPY_VESSEL.get(), TECBlocks.REINFORCE_ENTROPY_VESSEL.get(), TECBlocks.OBSIDIAN_ENTROPY_VESSEL.get(),
+                TECBlocks.NETHERITE_ENTROPY_VESSEL.get(), TECBlocks.CREATIVE_ENTROPY_VESSEL.get(), TECBlocks.ENTROPY_FORGE.get()
         );
     }
 }

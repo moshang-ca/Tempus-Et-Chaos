@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/orientable_with_bottom",
+  "textures": {
+    "bottom": "tempusetchaos:block/entropy_node/bottom",
+    "front": "tempusetchaos:block/entropy_node/front",
+    "side": "tempusetchaos:block/entropy_node/side",
+    "top": "tempusetchaos:block/entropy_node/top"
+  }
+}

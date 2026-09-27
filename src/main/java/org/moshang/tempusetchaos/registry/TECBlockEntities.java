@@ -34,6 +34,8 @@ public class TECBlockEntities {
                         TECBlocks.NETHERITE_ENTROPY_VESSEL.get(),
                         TECBlocks.CREATIVE_ENTROPY_VESSEL.get())
                     .build(null));
+    public static final Supplier<BlockEntityType<BEEntropyForge>> ENTROPY_FORGE_BE =
+            BE_TYPE_DR.register("entropy_forge", () -> BlockEntityType.Builder.of(BEEntropyForge::new, TECBlocks.ENTROPY_FORGE.get()).build(null));
 
     public static final Supplier<BlockEntityType<BEEntropyPipe>> ENTROPY_PIPE_BE =
             BE_TYPE_DR.register("entropy_pipe", () -> BlockEntityType.Builder.of(BEEntropyPipe::new, TECBlocks.ENTROPY_PIPE.get()).build(null));

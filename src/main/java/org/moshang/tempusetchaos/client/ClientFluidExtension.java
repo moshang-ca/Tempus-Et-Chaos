@@ -21,7 +21,7 @@ public class ClientFluidExtension implements IClientFluidTypeExtensions {
                     tintColor
             );
         }
-        String prefix = fluidName.getNamespace() + "block/";
+        String prefix = fluidName.getNamespace() + ":block/";
         return new ClientFluidExtension(
                 ResourceLocation.parse(prefix + fluidName.getPath() + "_still"),
                 ResourceLocation.parse(prefix + fluidName.getPath() + "_flow"),

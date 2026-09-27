@@ -23,10 +23,7 @@ public class EntropyWorldData extends SavedData {
     }
 
     public static EntropyWorldData get(ServerLevel level) {
-        return level.getDataStorage().computeIfAbsent(new Factory<>(
-                EntropyWorldData::create,
-                EntropyWorldData::load
-        ), "entropy_data");
+        return level.getDataStorage().computeIfAbsent(new Factory<>(EntropyWorldData::create, EntropyWorldData::load), "entropy_data");
     }
 
     public static EntropyWorldData load(CompoundTag tag, HolderLookup.Provider provider) {

@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/orientable_with_bottom",
+  "textures": {
+    "bottom": "tempusetchaos:block/accelerator/bottom",
+    "front": "tempusetchaos:block/accelerator/front",
+    "side": "tempusetchaos:block/accelerator/side",
+    "top": "tempusetchaos:block/accelerator/top"
+  }
+}

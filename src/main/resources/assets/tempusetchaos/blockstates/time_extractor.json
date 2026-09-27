@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "tempusetchaos:block/time_extractor",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "tempusetchaos:block/time_extractor"
+    },
+    "facing=south": {
+      "model": "tempusetchaos:block/time_extractor",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "tempusetchaos:block/time_extractor",
+      "y": 270
+    }
+  }
+}

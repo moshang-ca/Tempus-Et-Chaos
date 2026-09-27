@@ -41,8 +41,8 @@ import org.moshang.tempusetchaos.registry.TECCapabilities;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import static org.moshang.tempusetchaos.block.BlockChrononNetCable.CONNECTIONS;
@@ -58,7 +58,7 @@ public class BlockEntropyPipe extends Block implements EntityBlock, IWrenchable 
     private static final VoxelShape CORE = Block.box(5, 5, 5, 11, 11, 11);
     private static final VoxelShape[] SHAPES = new VoxelShape[64];
 
-    private static final Map<Integer, VoxelShape> MODE_SHAPES = new ConcurrentHashMap<>();
+    private static final Map<Integer, VoxelShape> MODE_SHAPES = new HashMap<>();
 
     static {
         for (int mask = 0; mask < 64; mask++) {
@@ -141,7 +141,10 @@ public class BlockEntropyPipe extends Block implements EntityBlock, IWrenchable 
     @Override
     protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock, BlockPos neighborPos, boolean movedByPiston) {
         super.neighborChanged(state, level, pos, neighborBlock, neighborPos, movedByPiston);
-        if (level.isClientSide) return;
+        if (level.isClientSide) {
+            if (level.getBlockEntity(pos) instanceof BEEntropyPipe pipe) pipe.refreshNeighborInsets();
+            return;
+        }
         for (Direction dir : Direction.values()) {
             if (isConnected(state, dir) != shouldPipeConnect(level, pos, dir)) {
                 BlockPos delta = neighborPos.subtract(pos);
@@ -269,7 +272,8 @@ public class BlockEntropyPipe extends Block implements EntityBlock, IWrenchable 
         @NotNull
         public BakedModel bake(IGeometryBakingContext context, ModelBaker baker, Function<Material, TextureAtlasSprite> spriteGetter, ModelState modelState, ItemOverrides overrides) {
             TextureAtlasSprite sprite = spriteGetter.apply(new Material(TextureAtlas.LOCATION_BLOCKS, ResourceLocation.fromNamespaceAndPath(TempusEtChaos.MODID, "block/entropy_pipe")));
-            return new EntropyPipeBakedModel(sprite, new float[]{ 5, 5, 5, 11, 11, 11 }, 5, 11);
+            TextureAtlasSprite gas = spriteGetter.apply(new Material(TextureAtlas.LOCATION_BLOCKS, ResourceLocation.fromNamespaceAndPath(TempusEtChaos.MODID, "block/entropy_gas_still")));
+            return new EntropyPipeBakedModel(sprite, gas, new float[]{ 5, 5, 5, 11, 11, 11 }, 5, 11);
         }
     }
 

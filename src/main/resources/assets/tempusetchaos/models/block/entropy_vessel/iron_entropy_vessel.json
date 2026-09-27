@@ -1,0 +1,4 @@
+{
+	"parent": "tempusetchaos:block/entropy_vessel/entropy_vessel",
+	"render_type": "minecraft:cutout"
+}

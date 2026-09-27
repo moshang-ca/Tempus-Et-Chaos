@@ -25,6 +25,10 @@ public abstract class BaseChrononNodeBlockEntity extends BlockEntity implements 
         this.capacity = chrononCapacity;
     }
 
+    /**
+     * Implement server logic in this method.
+     * <p>Default implementation has ensured this will run on the server side</>
+     * */
     public void serverTick() {
         if (level == null || level.isClientSide) return;
         if (innerNetwork == null) {

@@ -17,6 +17,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.WaterloggedTransparentBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
@@ -39,7 +40,7 @@ import java.util.UUID;
 import java.util.function.Function;
 
 @ParametersAreNonnullByDefault
-public class BlockChrononNetCable extends Block implements ICableConnectable {
+public class BlockChrononNetCable extends WaterloggedTransparentBlock implements ICableConnectable {
     public static final IntegerProperty CONNECTIONS = IntegerProperty.create("connections", 0, 63);
 
     private static final VoxelShape CORE = Block.box(6, 6, 6, 10, 10, 10);
@@ -73,6 +74,7 @@ public class BlockChrononNetCable extends Block implements ICableConnectable {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        super.createBlockStateDefinition(builder);
         builder.add(CONNECTIONS);
     }
 
@@ -181,7 +183,8 @@ public class BlockChrononNetCable extends Block implements ICableConnectable {
         @NotNull
         public BakedModel bake(IGeometryBakingContext context, ModelBaker baker, Function<Material, TextureAtlasSprite> spriteGetter, ModelState modelState, ItemOverrides overrides) {
             TextureAtlasSprite sprite = spriteGetter.apply(new Material(TextureAtlas.LOCATION_BLOCKS, ResourceLocation.fromNamespaceAndPath(TempusEtChaos.MODID, "block/chronon_cable")));
-            return new CableBakedModel(sprite, new float[]{ 6, 6, 6, 10, 10, 10 }, 6, 10);
+            TextureAtlasSprite flow = spriteGetter.apply(new Material(TextureAtlas.LOCATION_BLOCKS, ResourceLocation.fromNamespaceAndPath(TempusEtChaos.MODID, "block/chronon")));
+            return new CableBakedModel(sprite, flow, new float[]{ 6, 6, 6, 10, 10, 10 }, 6, 10);
         }
     }
 

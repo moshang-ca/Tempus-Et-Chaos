@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "tempusetchaos:block/entropy_vessel/iron_entropy_vessel"
+    }
+  }
+}

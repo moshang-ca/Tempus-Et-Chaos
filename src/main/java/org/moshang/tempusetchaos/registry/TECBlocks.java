@@ -34,19 +34,23 @@ public class TECBlocks {
     public static final DeferredBlock<BlockEntropyVessel> IRON_ENTROPY_VESSEL =
             registerItemLikeBlock("iron_entropy_vessel", (properties) -> new BlockEntropyVessel(properties, VesselTier.IRON));
     public static final DeferredBlock<BlockEntropyVessel> REINFORCE_ENTROPY_VESSEL =
-            registerItemLikeBlock("reinfroce_entropy_vessel", (properties) -> new BlockEntropyVessel(properties, VesselTier.REINFORCED));
+            registerItemLikeBlock("reinforce_entropy_vessel", (properties) -> new BlockEntropyVessel(properties, VesselTier.REINFORCED));
     public static final DeferredBlock<BlockEntropyVessel> OBSIDIAN_ENTROPY_VESSEL =
             registerItemLikeBlock("obsidian_entropy_vessel", (properties) -> new BlockEntropyVessel(properties, VesselTier.OBSIDIAN));
     public static final DeferredBlock<BlockEntropyVessel> NETHERITE_ENTROPY_VESSEL =
             registerItemLikeBlock("netherite_entropy_vessel", (properties) -> new BlockEntropyVessel(properties, VesselTier.NETHERITE));
     public static final DeferredBlock<BlockEntropyVessel> CREATIVE_ENTROPY_VESSEL =
             registerItemLikeBlock("creative_entropy_vessel", (properties) -> new BlockEntropyVessel(properties, VesselTier.CREATIVE));
+    public static final DeferredBlock<BlockEntropyForge> ENTROPY_FORGE =
+            registerItemLikeBlock("entropy_forge", BlockEntropyForge::new);
 
     public static final DeferredBlock<LiquidBlock> GAS_ENTROPY =
-            BLOCK_DR.register("gas_entropy_block", () -> new LiquidBlock(TECUtilities.GAS_ENTROPY_SOURCE.get(), BlockBehaviour.Properties.ofFullCopy(Blocks.WATER)));
+            BLOCK_DR.register("gas_entropy_block", () -> new LiquidBlock(TECFluids.GAS_ENTROPY_SOURCE.get(), BlockBehaviour.Properties.ofFullCopy(Blocks.WATER)));
 
     public static final DeferredBlock<Block> ENTROPY_CRYSTAL_BLOCK =
             registerItemLikeSimpleBlock("entropy_crystal_block");
+    public static final DeferredBlock<Block> ENTROPY_CRYSTAL_ORE =
+            registerItemLikeSimpleBlock("entropy_crystal_ore");
 
     private static <T extends Block> DeferredBlock<T> registerItemLikeBlock(String name, Function<BlockBehaviour.Properties, ? extends T> func) {
         DeferredBlock<T> toReturn = BLOCK_DR.registerBlock(name, func);

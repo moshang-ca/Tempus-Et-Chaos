@@ -1,0 +1,10 @@
+{
+	"parent": "tempusetchaos:block/entropy_vessel/entropy_vessel",
+	"render_type": "minecraft:cutout",
+	"textures": {
+		"side": "tempusetchaos:block/entropy_vessel/reinforced/side",
+		"top": "tempusetchaos:block/entropy_vessel/reinforced/top",
+		"bottom": "tempusetchaos:block/entropy_vessel/reinforced/bottom",
+		"particle": "tempusetchaos:block/entropy_vessel/reinforced/side"
+	}
+}

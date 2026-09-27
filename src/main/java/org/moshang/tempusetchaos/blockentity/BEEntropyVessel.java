@@ -22,7 +22,7 @@ import org.moshang.tempusetchaos.api.VesselTier;
 import org.moshang.tempusetchaos.block.BlockEntropyVessel;
 import org.moshang.tempusetchaos.data.EntropyWorldData;
 import org.moshang.tempusetchaos.registry.TECBlockEntities;
-import org.moshang.tempusetchaos.registry.TECUtilities;
+import org.moshang.tempusetchaos.registry.TECFluids;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -60,7 +60,10 @@ public class BEEntropyVessel extends BlockEntity {
 
     public BEEntropyVessel(BlockPos pos, BlockState blockState) {
         super(TECBlockEntities.ENTROPY_VESSEL_BE.get(), pos, blockState);
-        this.tier = blockState.getValue(BlockEntropyVessel.TIER);
+        if (blockState.getBlock() instanceof BlockEntropyVessel blockVessel)
+            this.tier = blockVessel.getTier();
+        else
+            this.tier = VesselTier.IRON;
         this.fluidHandler = new FluidTank(tier.capacity());
     }
 
@@ -195,13 +198,21 @@ public class BEEntropyVessel extends BlockEntity {
         return coolingModules[dir];
     }
 
+    public int getCoolingMask() {
+        int mask = 0;
+        for (int i = 0; i < 4; i++) {
+            if (coolingModules[i] > 0) mask |= 1 << i;
+        }
+        return mask;
+    }
+
     public int coolingFactorScaled() {
         return SCALE - Math.min(COOLING_MAX_CUT, coolingCount() * COOLING_PER_TUBE);
     }
 
     public long entropyAmount() {
         FluidStack stack = fluidHandler.getFluid();
-        return stack.is(TECUtilities.GAS_ENTROPY_TYPE.get()) ? stack.getAmount() : 0L;
+        return stack.is(TECFluids.GAS_ENTROPY_TYPE.get()) ? stack.getAmount() : 0L;
     }
 
     @Override

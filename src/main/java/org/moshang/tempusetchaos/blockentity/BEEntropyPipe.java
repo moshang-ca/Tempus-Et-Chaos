@@ -13,9 +13,11 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.neoforge.capabilities.BlockCapabilityCache;
 import net.neoforged.neoforge.client.model.data.ModelData;
 import net.neoforged.neoforge.fluids.FluidStack;
@@ -28,7 +30,7 @@ import org.moshang.tempusetchaos.blockentity.network.PipeNetManager;
 import org.moshang.tempusetchaos.client.model.EntropyPipeModelData;
 import org.moshang.tempusetchaos.registry.TECBlockEntities;
 import org.moshang.tempusetchaos.registry.TECCapabilities;
-import org.moshang.tempusetchaos.registry.TECUtilities;
+import org.moshang.tempusetchaos.registry.TECFluids;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Arrays;
@@ -43,6 +45,7 @@ public class BEEntropyPipe extends BlockEntity {
     private static final String NET_UUID_KEY = "net_uuid";
     private static final String SHARE_KEY = "entropy_share";
     private static final String FACE_MODE_KEY = "face_modes";
+    private static final String HAS_GAS_KEY = "has_gas";
 
     @Getter
     @Setter
@@ -55,6 +58,10 @@ public class BEEntropyPipe extends BlockEntity {
     private long pendingShare;
 
     private final EntropyPipeFaceMode[] faceModes = createDefaultFaceModes();
+
+    private int lastInsets = -1;
+
+    private boolean hasGas;
 
     // TODO: This value is maintained by the turbocharger mounting component; it is not persisted and needs to be reset by the mounting component after reloading.
     @Getter
@@ -173,6 +180,7 @@ public class BEEntropyPipe extends BlockEntity {
                 }
             }
         }
+        this.hasGas = tag.getBoolean(HAS_GAS_KEY);
         PipeNetManager.enqueue(this);
     }
 
@@ -193,13 +201,54 @@ public class BEEntropyPipe extends BlockEntity {
             modes[i] = faceModes[i].ordinal();
         }
         tag.putIntArray(FACE_MODE_KEY, modes);
+        tag.putBoolean(HAS_GAS_KEY, hasGas);
+    }
+
+    public void syncGasVisual(boolean gas) {
+        if (this.hasGas == gas) return;
+        this.hasGas = gas;
+        if (level instanceof ServerLevel serverLevel) {
+            serverLevel.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), Block.UPDATE_ALL);
+        }
     }
 
     @Override
     @NotNull
     public ModelData getModelData() {
         if (level == null || !level.isClientSide) return ModelData.EMPTY;
-        return EntropyPipeModelData.of(encodeFaceModes());
+        lastInsets = encodeNeighborInsets();
+        return EntropyPipeModelData.of(encodeFaceModes(), lastInsets, hasGas);
+    }
+
+    public void refreshNeighborInsets() {
+        if (level == null || !level.isClientSide) return;
+        int insets = encodeNeighborInsets();
+        if (insets == lastInsets) return;
+        lastInsets = insets;
+        refreshClientModel();
+    }
+
+    public int encodeNeighborInsets() {
+        int insets = 0;
+        for (Direction dir : Direction.values()) {
+            insets |= (neighborInset(dir) & 0xF) << (dir.ordinal() * 4);
+        }
+        return insets;
+    }
+
+    private int neighborInset(Direction dir) {
+        if (level == null) return 0;
+        BlockPos neighborPos = getBlockPos().relative(dir);
+        BlockState neighborState = level.getBlockState(neighborPos);
+        VoxelShape shape = neighborState.getCollisionShape(level, neighborPos);
+        if (shape.isEmpty()) return 0;
+
+        Direction.Axis axis = dir.getAxis();
+        double distance = switch (dir) {
+            case EAST, SOUTH, UP -> shape.min(axis);
+            case WEST, NORTH, DOWN -> 1.0D - shape.max(axis);
+        };
+        return Mth.clamp((int) Math.round(distance * 16.0D), 0, 15);
     }
 
     @Override
@@ -220,7 +269,7 @@ public class BEEntropyPipe extends BlockEntity {
         refreshClientModel();
     }
 
-    private void refreshClientModel() {
+    public void refreshClientModel() {
         if (level == null || !level.isClientSide) return;
         requestModelDataUpdate();
         if (level instanceof ClientLevel clientLevel) {
@@ -259,7 +308,7 @@ public class BEEntropyPipe extends BlockEntity {
 
         @Override
         public boolean isFluidValid(int tank, FluidStack stack) {
-            return stack.is(TECUtilities.GAS_ENTROPY_TYPE.get());
+            return stack.is(TECFluids.GAS_ENTROPY_TYPE.get());
         }
 
         @Override

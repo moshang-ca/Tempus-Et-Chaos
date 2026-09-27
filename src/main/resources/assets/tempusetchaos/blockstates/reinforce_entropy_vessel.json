@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "tempusetchaos:block/entropy_vessel/reinforce_entropy_vessel"
+    }
+  }
+}

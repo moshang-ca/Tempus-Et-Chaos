@@ -10,7 +10,7 @@ import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
 import org.moshang.tempusetchaos.api.BaseChrononNodeBlockEntity;
 import org.moshang.tempusetchaos.registry.TECBlockEntities;
-import org.moshang.tempusetchaos.registry.TECUtilities;
+import org.moshang.tempusetchaos.registry.TECFluids;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -19,7 +19,7 @@ public class BEEntropyNode extends BaseChrononNodeBlockEntity {
     private static final int BASE_CONSUMPTION = 5;      // 5 ch/tick
 
     @Getter
-    private final FluidTank fluidHandler = new FluidTank(25600, fluidStack -> fluidStack.is(TECUtilities.GAS_ENTROPY_TYPE.get()));
+    private final FluidTank fluidHandler = new FluidTank(25600, fluidStack -> fluidStack.is(TECFluids.GAS_ENTROPY_TYPE.get()));
 
     public BEEntropyNode(BlockPos pos, BlockState blockState) {
         super(TECBlockEntities.ENTROPY_NODE_BE.get(), pos, blockState, 3000);
@@ -31,7 +31,7 @@ public class BEEntropyNode extends BaseChrononNodeBlockEntity {
         if (innerNetwork != null) {
             long consumed = innerNetwork.extractChronon(getConsumed(), false);
             if (consumed == getConsumed()) {
-                fluidHandler.fill(new FluidStack(TECUtilities.GAS_ENTROPY_SOURCE.get(), 10), IFluidHandler.FluidAction.EXECUTE);
+                fluidHandler.fill(new FluidStack(TECFluids.GAS_ENTROPY_SOURCE.get(), 10), IFluidHandler.FluidAction.EXECUTE);
             }
         }
     }

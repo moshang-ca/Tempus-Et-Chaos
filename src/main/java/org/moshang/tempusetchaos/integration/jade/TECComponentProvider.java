@@ -6,7 +6,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.material.Fluid;
 import net.neoforged.neoforge.fluids.FluidStack;
 import org.moshang.tempusetchaos.TempusEtChaos;
-import org.moshang.tempusetchaos.registry.TECUtilities;
+import org.moshang.tempusetchaos.registry.TECFluids;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IComponentProvider;
 import snownee.jade.api.ITooltip;
@@ -29,16 +29,14 @@ public enum TECComponentProvider implements IComponentProvider<BlockAccessor> {
         if (capacity <= 0) return;
 
         IElementHelper helper = IElementHelper.get();
-        Fluid gas = TECUtilities.GAS_ENTROPY_SOURCE.get();
+        Fluid gas = TECFluids.GAS_ENTROPY_SOURCE.get();
         Component name = new FluidStack(gas, 1).getHoverName();
         Component text = Component.translatable(
-                "jade.tempusetchaos.entropy_amount", name, stored, capacity);
+                "jade.tempusetchaos.fluid_amount", name, stored, capacity);
         float ratio = Math.min(1f, stored / (float) capacity);
 
-        ProgressStyle pStyle = helper.progressStyle()
-                        .textColor(0xFFFFFF)
-                        .overlay(helper.sprite(ResourceLocation.fromNamespaceAndPath(TempusEtChaos.MODID, "gas_entropy"), 22, 16));
-        // tooltip.add(helper.fluid(JadeFluidObject.of(gas, stored)));
+        ProgressStyle pStyle = helper.progressStyle().textColor(0xFFFFFF)
+                        .overlay(helper.sprite(ResourceLocation.fromNamespaceAndPath(TempusEtChaos.MODID, "gas_entropy_bar_fill"), 200, 24));
         tooltip.add(helper.progress(ratio, text, pStyle, BoxStyle.getNestedBox(), true));
     }
 

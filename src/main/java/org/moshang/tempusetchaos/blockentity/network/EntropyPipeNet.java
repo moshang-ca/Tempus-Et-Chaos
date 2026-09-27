@@ -16,7 +16,7 @@ import org.jetbrains.annotations.Nullable;
 import org.moshang.tempusetchaos.api.EntropyPipeFaceMode;
 import org.moshang.tempusetchaos.block.BlockEntropyPipe;
 import org.moshang.tempusetchaos.blockentity.BEEntropyPipe;
-import org.moshang.tempusetchaos.registry.TECUtilities;
+import org.moshang.tempusetchaos.registry.TECFluids;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -90,6 +90,8 @@ public class EntropyPipeNet {
             for (Direction dir : Direction.values()) {
                 addEndpoint(pipe, dir, pipe.getFaceMode(dir));
             }
+            // 空管网加上这根管子后可能就有气了，而 markDirty 要等存量变化才会跑
+            pipe.syncGasVisual(stored > 0);
         }
         return true;
     }
@@ -188,7 +190,7 @@ public class EntropyPipeNet {
 
     public static FluidStack gasStack(long amount) {
         if (amount <= 0) return FluidStack.EMPTY;
-        return new FluidStack(TECUtilities.GAS_ENTROPY_SOURCE.get(), toInt(amount));
+        return new FluidStack(TECFluids.GAS_ENTROPY_SOURCE.get(), toInt(amount));
     }
 
     public void tick(ServerLevel level) {
@@ -257,15 +259,19 @@ public class EntropyPipeNet {
 
     public void markDirty(ServerLevel level) {
         dirtyChunks.clear();
+        boolean hasGas = stored > 0;
         for (long key : members) {
             BlockPos pos = BlockPos.of(key);
             if (!level.isLoaded(pos)) continue;
-            long chunkKey = ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4);
-            if (dirtyChunks.contains(chunkKey)) continue;
+            // 每根管子都要看一眼：同一区块里往往串着一整排管道，
+            // 按区块去重会把除第一根以外的全部跳过，于是只有一根亮起来。
             if (level.getBlockEntity(pos) instanceof BEEntropyPipe pipe) {
                 pipe.setChanged();
-                dirtyChunks.add(chunkKey);
+                pipe.syncGasVisual(hasGas);
             }
+            long chunkKey = ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4);
+            if (dirtyChunks.contains(chunkKey)) continue;
+            dirtyChunks.add(chunkKey);
         }
     }
 

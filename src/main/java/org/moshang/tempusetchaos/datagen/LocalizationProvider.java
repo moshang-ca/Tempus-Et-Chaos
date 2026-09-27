@@ -19,13 +19,22 @@ public class LocalizationProvider extends LanguageProvider {
         this.add(TECBlocks.ENTROPY_NODE.get(), toDisplayName(TECBlocks.ENTROPY_NODE));
         this.add(TECBlocks.ENTROPY_PIPE.get(), toDisplayName(TECBlocks.ENTROPY_PIPE));
         this.add(TECBlocks.ENTROPY_REACTOR.get(), toDisplayName(TECBlocks.ENTROPY_REACTOR));
-        this.add(TECBlocks.GAS_ENTROPY.get(), toDisplayName(TECBlocks.GAS_ENTROPY));
+        this.add(TECBlocks.GAS_ENTROPY.get(), "Gas Entropy");
         this.add(TECBlocks.REDUCER.get(), toDisplayName(TECBlocks.REDUCER));
         this.add(TECBlocks.TIME_EXTRACTOR.get(), toDisplayName(TECBlocks.TIME_EXTRACTOR));
+        this.add(TECBlocks.IRON_ENTROPY_VESSEL.get(), toDisplayName(TECBlocks.IRON_ENTROPY_VESSEL));
+        this.add(TECBlocks.REINFORCE_ENTROPY_VESSEL.get(), toDisplayName(TECBlocks.REINFORCE_ENTROPY_VESSEL));
+        this.add(TECBlocks.OBSIDIAN_ENTROPY_VESSEL.get(), toDisplayName(TECBlocks.OBSIDIAN_ENTROPY_VESSEL));
+        this.add(TECBlocks.NETHERITE_ENTROPY_VESSEL.get(), toDisplayName(TECBlocks.NETHERITE_ENTROPY_VESSEL));
+        this.add(TECBlocks.CREATIVE_ENTROPY_VESSEL.get(), toDisplayName(TECBlocks.CREATIVE_ENTROPY_VESSEL));
+        this.add(TECBlocks.ENTROPY_CRYSTAL_ORE.get(), toDisplayName(TECBlocks.ENTROPY_CRYSTAL_ORE));
 
         this.add(TECItems.ENTROPY_CRYSTAL.get(), toDisplayName(TECItems.ENTROPY_CRYSTAL));
         this.add(TECItems.GAS_ENTROPY_BUCKET.get(), toDisplayName(TECItems.GAS_ENTROPY_BUCKET));
         this.add(TECItems.WRENCH.get(), toDisplayName(TECItems.WRENCH));
+
+        this.add("fluid.tempusetchaos.gas_entropy", "Gas Entropy");
+        this.add("jade.tempusetchaos.fluid_amount", "%s: %s / %s");
     }
 
     protected static <R, T extends R> String toDisplayName(DeferredHolder<R, T> registerHolder) {

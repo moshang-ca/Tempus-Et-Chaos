@@ -16,23 +16,22 @@ import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.moshang.tempusetchaos.api.BaseChrononNodeBlockEntity;
 import org.moshang.tempusetchaos.data.EntropyWorldData;
-import org.moshang.tempusetchaos.registry.TECBlockEntities;
-import org.moshang.tempusetchaos.registry.TECBlocks;
-import org.moshang.tempusetchaos.registry.TECItems;
-import org.moshang.tempusetchaos.registry.TECUtilities;
+import org.moshang.tempusetchaos.registry.*;
+import org.moshang.tempusetchaos.util.TECConstants;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
 @ParametersAreNonnullByDefault
 public class BEEntropyReactor extends BaseChrononNodeBlockEntity {
     @Getter
-    private final FluidTank fluidHandler = new FluidTank(51200, stack -> stack.is(TECUtilities.GAS_ENTROPY_TYPE.get()));
+    private final FluidTank fluidHandler = new FluidTank(51200, stack -> stack.is(TECFluids.GAS_ENTROPY_TYPE.get()));
     @Getter
     private final IItemHandler itemHandler = new ItemStackHandler(3);       // Maybe we should not allow input slot to be extracted?
-    private final int baseConsumption = 10;     // 10 ch/tick
+    private final int baseConsumption = 0;     // 10 ch/tick
     private final ChunkPos inChunk;
 
     private EntropyWorldData entropyData = null;
+    int tickCount = 0;
 
     public BEEntropyReactor(BlockPos pos, BlockState blockState) {
         super(TECBlockEntities.ENTROPY_REACTOR_BE.get(), pos, blockState, 5000);
@@ -49,25 +48,31 @@ public class BEEntropyReactor extends BaseChrononNodeBlockEntity {
     @Override
     public void serverTick() {
         super.serverTick();
+        tickCount++;
         if (entropyData == null)
             entropyData = EntropyWorldData.get((ServerLevel) level);
-        float concentration = entropyData.getConcentration(inChunk);
-        if (concentration < 3f) {
-            fluidHandler.fill(new FluidStack(TECUtilities.GAS_ENTROPY_SOURCE.get(), Math.max((int) concentration * 10, 15)), IFluidHandler.FluidAction.EXECUTE);
-        } else {
-            fluidHandler.fill(new FluidStack(TECUtilities.GAS_ENTROPY_SOURCE.get(), Math.max((int) concentration * 15, 20)), IFluidHandler.FluidAction.EXECUTE);
-            if (concentration > 10f) {
-                itemHandler.insertItem(1, new ItemStack(TECItems.ENTROPY_CRYSTAL.get(), (int) (concentration / 40f) + 1), false);
-                if (concentration > 75f) {
-                    //noinspection DataFlowIssue
-                    itemHandler.insertItem(2, new ItemStack(TECItems.getBlockItem(TECBlocks.ENTROPY_CRYSTAL_BLOCK.getRegisteredName()), 1), false);
+        if (innerNetwork != null) {
+            long consumed = innerNetwork.extractChronon(baseConsumption, false);
+            if (consumed != baseConsumption) {
+                FluidStack entropy = fluidHandler.drain(9999999, IFluidHandler.FluidAction.EXECUTE);
+                entropyData.addConcentration(inChunk, Mth.clamp(entropy.getAmount() / TECConstants.ENTROPY_GAS_CONCENTRATION, 0, 20));
+                return;
+            }
+            float concentration = entropyData.getConcentration(inChunk);
+            if (concentration < 3f) {
+                fluidHandler.fill(new FluidStack(TECFluids.GAS_ENTROPY_SOURCE.get(), Math.max((int) concentration * 10, 15)), IFluidHandler.FluidAction.EXECUTE);
+            } else {
+                fluidHandler.fill(new FluidStack(TECFluids.GAS_ENTROPY_SOURCE.get(), Math.max((int) concentration * 15, 20)), IFluidHandler.FluidAction.EXECUTE);
+                if (tickCount % 100 == 0) {
+                    if (concentration < 75f)
+                        itemHandler.insertItem(1, new ItemStack(TECItems.ENTROPY_CRYSTAL.get(), (int) (concentration / 40f) + 1), false);
+                    else
+                        //noinspection DataFlowIssue
+                        itemHandler.insertItem(2, new ItemStack(TECItems.getBlockItem(TECBlocks.ENTROPY_CRYSTAL_BLOCK.getRegisteredName()), 1), false);
+                    tickCount = 0;
                 }
             }
-        }
-        long consumed = 0;
-        if (innerNetwork != null)
-            consumed = innerNetwork.extractChronon(baseConsumption, false);
-        if (innerNetwork == null || consumed != baseConsumption) {
+        } else {
             FluidStack entropy = fluidHandler.drain(9999999, IFluidHandler.FluidAction.EXECUTE);
             entropyData.addConcentration(inChunk, Mth.clamp(entropy.getAmount() / 1250f, 0, 20));
         }

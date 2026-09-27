@@ -11,6 +11,7 @@ import net.neoforged.neoforge.data.event.GatherDataEvent;
 import org.moshang.tempusetchaos.block.BlockChrononNetCable;
 import org.moshang.tempusetchaos.block.BlockEntropyPipe;
 import org.moshang.tempusetchaos.datagen.LocalizationProvider;
+import org.moshang.tempusetchaos.datagen.TECBlockStateProvider;
 import org.moshang.tempusetchaos.registry.*;
 import org.slf4j.Logger;
 
@@ -26,8 +27,10 @@ public class TempusEtChaos {
         TECBlocks.BLOCK_DR.register(modEventBus);
         TECItems.ITEM_DR.register(modEventBus);
         TECBlockEntities.BE_TYPE_DR.register(modEventBus);
-        TECUtilities.FLUID_TYPE_DR.register(modEventBus);
-        TECUtilities.FLUID_DR.register(modEventBus);
+        TECFluids.FLUID_TYPE_DR.register(modEventBus);
+        TECFluids.FLUID_DR.register(modEventBus);
+        TECRecipes.RECIPE_TYPE_DR.register(modEventBus);
+        TECRecipes.RECIPE_SERIALIZER_DR.register(modEventBus);
 
         modEventBus.addListener(TECCapabilities::register);
     }
@@ -41,5 +44,6 @@ public class TempusEtChaos {
         DataGenerator gen = event.getGenerator();
 
         gen.addProvider(event.includeClient(), new LocalizationProvider(gen.getPackOutput(), MODID, "en_us"));
+        gen.addProvider(event.includeClient(), new TECBlockStateProvider(gen.getPackOutput(), MODID, event.getExistingFileHelper()));
     }
 }

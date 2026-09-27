@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "tempusetchaos:block/accelerator",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "tempusetchaos:block/accelerator"
+    },
+    "facing=south": {
+      "model": "tempusetchaos:block/accelerator",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "tempusetchaos:block/accelerator",
+      "y": 270
+    }
+  }
+}

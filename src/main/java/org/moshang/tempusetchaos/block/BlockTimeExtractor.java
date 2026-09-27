@@ -22,7 +22,7 @@ public class BlockTimeExtractor extends BaseChrononMachineryBlock {
     private static final MapCodec<BlockTimeExtractor> CODEC = simpleCodec(BlockTimeExtractor::new);
 
     public BlockTimeExtractor(Properties properties) {
-        super(properties);
+        super(properties.noOcclusion());
     }
 
     @Override
