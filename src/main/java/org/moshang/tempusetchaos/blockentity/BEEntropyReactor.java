@@ -55,7 +55,7 @@ public class BEEntropyReactor extends BaseChrononNodeBlockEntity {
             long consumed = innerNetwork.extractChronon(baseConsumption, false);
             if (consumed != baseConsumption) {
                 FluidStack entropy = fluidHandler.drain(9999999, IFluidHandler.FluidAction.EXECUTE);
-                entropyData.addConcentration(inChunk, Mth.clamp(entropy.getAmount() / TECConstants.ENTROPY_GAS_CONCENTRATION, 0, 20));
+                entropyData.addConcentration(inChunk, Mth.clamp(entropy.getAmount() * TECConstants.ENTROPY_GAS_CONCENTRATION, 0, 20));
                 return;
             }
             float concentration = entropyData.getConcentration(inChunk);
