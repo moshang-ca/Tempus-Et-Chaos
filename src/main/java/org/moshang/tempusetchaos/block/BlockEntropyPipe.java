@@ -272,7 +272,7 @@ public class BlockEntropyPipe extends Block implements EntityBlock, IWrenchable 
         @NotNull
         public BakedModel bake(IGeometryBakingContext context, ModelBaker baker, Function<Material, TextureAtlasSprite> spriteGetter, ModelState modelState, ItemOverrides overrides) {
             TextureAtlasSprite sprite = spriteGetter.apply(new Material(TextureAtlas.LOCATION_BLOCKS, ResourceLocation.fromNamespaceAndPath(TempusEtChaos.MODID, "block/entropy_pipe")));
-            TextureAtlasSprite gas = spriteGetter.apply(new Material(TextureAtlas.LOCATION_BLOCKS, ResourceLocation.fromNamespaceAndPath(TempusEtChaos.MODID, "block/entropy_gas_still")));
+            TextureAtlasSprite gas = spriteGetter.apply(new Material(TextureAtlas.LOCATION_BLOCKS, ResourceLocation.fromNamespaceAndPath(TempusEtChaos.MODID, "block/gas_entropy_still")));
             return new EntropyPipeBakedModel(sprite, gas, new float[]{ 5, 5, 5, 11, 11, 11 }, 5, 11);
         }
     }

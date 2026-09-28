@@ -13,6 +13,7 @@ public interface IUIWindow {
     default void tick() {}
     void onClose();
     default void onRemoved() {}
+    default void onFocusChanged(boolean focused) {}
 
     int getX();
     int getY();
@@ -28,6 +29,8 @@ public interface IUIWindow {
     }
 
     default boolean isVisible() { return true; }
+
+    default boolean isClipped() { return true; }
 
     @Nullable
     default IUIWindow getParent() { return null; }
