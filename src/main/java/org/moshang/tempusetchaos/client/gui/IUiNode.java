@@ -3,17 +3,25 @@ package org.moshang.tempusetchaos.client.gui;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import org.jetbrains.annotations.Nullable;
+import org.moshang.tempusetchaos.client.gui.anim.AnimProps;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
+/**
+ * Anything a host can hold: windows for the screen, elements for a window.
+ * Positions and sizes are host space, everything handed to the callbacks below is local to the node,
+ * its own top left being (0, 0).
+ */
 @ParametersAreNonnullByDefault
-public interface IUIWindow {
-    void init(Minecraft mc, int screenWidth, int screenHeight);
-    void onResize(int screenWidth, int screenHeight);
+public interface IUiNode {
+    default void init(Minecraft mc, int hostWidth, int hostHeight) {}
+    default void onResize(int hostWidth, int hostHeight) {}
     default void tick() {}
-    void onClose();
+    default void onAdded() {}
     default void onRemoved() {}
+    default void onClose() {}
     default void onFocusChanged(boolean focused) {}
+    default void onHoverChanged(boolean hovered) {}
 
     int getX();
     int getY();
@@ -25,7 +33,7 @@ public interface IUIWindow {
     default int getBottom() { return getY() + getHeight(); }
 
     default boolean isMouseOver(double mouseX, double mouseY) {
-        return mouseX >= getX() && mouseX < getRight() && mouseY >= getY() && mouseY < getBottom();
+        return mouseX >= 0 && mouseX < getWidth() && mouseY >= 0 && mouseY < getHeight();
     }
 
     default boolean isVisible() { return true; }
@@ -33,7 +41,7 @@ public interface IUIWindow {
     default boolean isClipped() { return true; }
 
     @Nullable
-    default IUIWindow getParent() { return null; }
+    default AnimProps getRenderProps() { return null; }
 
     void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick);
 
@@ -45,4 +53,6 @@ public interface IUIWindow {
     default boolean keyPressed(int keyCode, int scanCode, int modifiers) { return false; }
     default boolean keyReleased(int keyCode, int scanCode, int modifiers) { return false; }
     default boolean charTyped(char codePoint, int modifiers) { return false; }
+
+    default void updateAnimation() { }
 }

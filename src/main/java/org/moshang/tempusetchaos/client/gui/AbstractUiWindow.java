@@ -1,0 +1,112 @@
+package org.moshang.tempusetchaos.client.gui;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import org.moshang.tempusetchaos.client.gui.element.UiElement;
+
+import javax.annotation.ParametersAreNonnullByDefault;
+
+/**
+ * A window that hosts elements. Elements live in the window's own space, the host translates the pose for them.
+ */
+@ParametersAreNonnullByDefault
+public abstract class AbstractUiWindow implements IUiWindow {
+    protected final UiHost<UiElement> elements = new UiHost<>();
+
+    @Override
+    public void init(Minecraft mc, int screenWidth, int screenHeight) {
+        elements.init(getWidth(), getHeight());
+    }
+
+    @Override
+    public void onResize(int screenWidth, int screenHeight) {
+        elements.onResize(getWidth(), getHeight());
+    }
+
+    @Override
+    public void tick() {
+        elements.tick();
+    }
+
+    @Override
+    public void updateAnimation() {
+        elements.updateAnimations();
+    }
+
+    @Override
+    public void onClose() {
+        elements.clear();
+    }
+
+    @Override
+    public void onRemoved() {
+        elements.clear();
+    }
+
+    @Override
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        renderContent(graphics, mouseX, mouseY, partialTick);
+        elements.render(graphics, mouseX, mouseY, partialTick);
+    }
+
+    protected abstract void renderContent(GuiGraphics graphics, int mouseX, int mouseY, float partialTick);
+
+    @Override
+    public void mouseMoved(double mouseX, double mouseY) {
+        elements.mouseMoved(mouseX, mouseY);
+        onMouseMoved(mouseX, mouseY);
+    }
+
+    @Override
+    public boolean isMouseClicked(double mouseX, double mouseY, int button) {
+        return elements.isMouseClicked(mouseX, mouseY, button) || onMouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean isMouseReleased(double mouseX, double mouseY, int button) {
+        return elements.isMouseReleased(mouseX, mouseY, button) || onMouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean isMouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        return elements.isMouseDragged(mouseX, mouseY, button, dragX, dragY)
+                || onMouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+
+    @Override
+    public boolean isMouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        return elements.isMouseScrolled(mouseX, mouseY, scrollX, scrollY)
+                || onMouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        return elements.keyPressed(keyCode, scanCode, modifiers) || onKeyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        return elements.keyReleased(keyCode, scanCode, modifiers) || onKeyReleased(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean charTyped(char codePoint, int modifiers) {
+        return elements.charTyped(codePoint, modifiers) || onCharTyped(codePoint, modifiers);
+    }
+
+    protected void onMouseMoved(double mouseX, double mouseY) {}
+
+    protected boolean onMouseClicked(double mouseX, double mouseY, int button) { return false; }
+
+    protected boolean onMouseReleased(double mouseX, double mouseY, int button) { return false; }
+
+    protected boolean onMouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) { return false; }
+
+    protected boolean onMouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) { return false; }
+
+    protected boolean onKeyPressed(int keyCode, int scanCode, int modifiers) { return false; }
+
+    protected boolean onKeyReleased(int keyCode, int scanCode, int modifiers) { return false; }
+
+    protected boolean onCharTyped(char codePoint, int modifiers) { return false; }
+}

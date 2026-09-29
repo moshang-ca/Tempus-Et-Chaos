@@ -12,7 +12,7 @@ import org.jetbrains.annotations.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 
 @ParametersAreNonnullByDefault
-public abstract class AbstractContainerWindow<T extends AbstractContainerMenu> implements IUIWindow {
+public abstract class AbstractContainerWindow<T extends AbstractContainerMenu> extends AbstractUiWindow {
     protected final T menu;
     private final Host host;
 
@@ -31,25 +31,30 @@ public abstract class AbstractContainerWindow<T extends AbstractContainerMenu> i
     public void init(Minecraft mc, int screenWidth, int screenHeight) {
         this.mc = mc;
         host.init(mc, screenWidth, screenHeight);
+        super.init(mc, screenWidth, screenHeight);
     }
 
     @Override
     public void onResize(int screenWidth, int screenHeight) {
         if (mc != null) host.resize(mc, screenWidth, screenHeight);
+        super.onResize(screenWidth, screenHeight);
     }
 
     @Override
     public void tick() {
+        super.tick();
         host.tick();
     }
 
     @Override
     public void onClose() {
+        super.onClose();
         dispose();
     }
 
     @Override
     public void onRemoved() {
+        super.onRemoved();
         dispose();
     }
 
@@ -84,29 +89,34 @@ public abstract class AbstractContainerWindow<T extends AbstractContainerMenu> i
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public boolean handlesOutsideClicks() {
+        return true;
+    }
+
+    @Override
+    protected void renderContent(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         host.renderWithTooltip(graphics, mouseX, mouseY, partialTick);
     }
 
     @Override
-    public void mouseMoved(double mouseX, double mouseY) {
+    protected void onMouseMoved(double mouseX, double mouseY) {
         host.mouseMoved(mouseX, mouseY);
     }
 
     @Override
-    public boolean isMouseClicked(double mouseX, double mouseY, int button) {
+    protected boolean onMouseClicked(double mouseX, double mouseY, int button) {
         // any spot that is not a slot is a drag handle, so the image stays exactly where vanilla puts it
         if (button == 0 && isMouseOver(mouseX, mouseY) && !host.overSlot(mouseX, mouseY)) {
             dragging = true;
-            grabX = mouseX - getX();
-            grabY = mouseY - getY();
+            grabX = mouseX;
+            grabY = mouseY;
             return true;
         }
         return host.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
-    public boolean isMouseReleased(double mouseX, double mouseY, int button) {
+    protected boolean onMouseReleased(double mouseX, double mouseY, int button) {
         if (dragging && button == 0) {
             dragging = false;
             return true;
@@ -115,42 +125,42 @@ public abstract class AbstractContainerWindow<T extends AbstractContainerMenu> i
     }
 
     @Override
-    public boolean isMouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+    protected boolean onMouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         if (dragging) {
-            setPosition((int) (mouseX - grabX), (int) (mouseY - grabY));
+            setPosition((int) Math.round(getX() + (mouseX - grabX)), (int) Math.round(getY() + (mouseY - grabY)));
             return true;
         }
         return host.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 
     @Override
-    public boolean isMouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    protected boolean onMouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         return host.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    protected boolean onKeyPressed(int keyCode, int scanCode, int modifiers) {
         // let the close key fall through to the window manager, the delegate would close the whole screen
         if (mc != null && mc.options.keyInventory.matches(keyCode, scanCode)) return false;
         return host.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+    protected boolean onKeyReleased(int keyCode, int scanCode, int modifiers) {
         return host.keyReleased(keyCode, scanCode, modifiers);
     }
 
     @Override
-    public boolean charTyped(char codePoint, int modifiers) {
+    protected boolean onCharTyped(char codePoint, int modifiers) {
         return host.charTyped(codePoint, modifiers);
     }
 
     protected int leftPos() {
-        return host.windowX();
+        return host.localX();
     }
 
     protected int topPos() {
-        return host.windowY();
+        return host.localY();
     }
 
     protected int imageWidth() {
@@ -188,6 +198,12 @@ public abstract class AbstractContainerWindow<T extends AbstractContainerMenu> i
         @Override
         protected void init() {
             super.init();
+            if (!placed) {
+                // keep vanilla's centering as the window position once, then the content lives at the pose origin
+                posX = leftPos;
+                posY = topPos;
+                placed = true;
+            }
             applyPosition();
         }
 
@@ -224,18 +240,25 @@ public abstract class AbstractContainerWindow<T extends AbstractContainerMenu> i
             applyPosition();
         }
 
+        int localX() {
+            return leftPos;
+        }
+
+        int localY() {
+            return topPos;
+        }
+
         int windowX() {
-            return placed ? posX : leftPos;
+            return posX;
         }
 
         int windowY() {
-            return placed ? posY : topPos;
+            return posY;
         }
 
         private void applyPosition() {
-            if (!placed) return;
-            leftPos = posX;
-            topPos = posY;
+            leftPos = 0;
+            topPos = 0;
         }
     }
 }

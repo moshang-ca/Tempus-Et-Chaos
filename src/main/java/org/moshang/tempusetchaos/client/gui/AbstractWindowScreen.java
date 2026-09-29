@@ -41,6 +41,7 @@ public abstract class AbstractWindowScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        windows.updateAnimations();
         super.render(graphics, mouseX, mouseY, partialTick);
         windows.render(graphics, mouseX, mouseY, partialTick);
     }
