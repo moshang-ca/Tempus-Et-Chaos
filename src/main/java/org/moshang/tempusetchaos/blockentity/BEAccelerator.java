@@ -7,18 +7,28 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.moshang.tempusetchaos.api.BaseChrononNodeBlockEntity;
+import org.moshang.tempusetchaos.blockentity.network.ChrononNetwork;
+import org.moshang.tempusetchaos.data.ChrononNetworkData;
+import org.moshang.tempusetchaos.menu.MenuAccelerator;
 import org.moshang.tempusetchaos.registry.TECBlockEntities;
+import org.moshang.tempusetchaos.registry.TECBlocks;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.ArrayList;
@@ -27,11 +37,13 @@ import java.util.List;
 import java.util.Set;
 
 @ParametersAreNonnullByDefault
-public class BEAccelerator extends BaseChrononNodeBlockEntity {
+public class BEAccelerator extends BaseChrononNodeBlockEntity implements MenuProvider {
     @Getter
     private static final Set<ResourceLocation> DEFAULT_BLACKLIST = new HashSet<>();
     private static final int BASE_CONSUMPTION = 5;     // 5 ch/tick
     private static final int MAX_ACC_ENTITY = 32;     // 32 entity/acc (in default)
+    private static final int MIN_MULTIPLIER = 2;
+    private static final int MAX_MULTIPLIER = 4;
 
     public static void initDefault() {
 
@@ -44,9 +56,9 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity {
     private final List<Entity> entityCache = new ArrayList<>();
     private final AABB area;
     @Getter
-    private int accelerateMultiplier = 2;
+    private int accelerateMultiplier = MIN_MULTIPLIER;
     @Getter
-    private int consumed = 0;
+    private int consumed = consumptionOf(MIN_MULTIPLIER);
     private long tickCounter = 0;
 
     public BEAccelerator(BlockPos pos, BlockState blockState) {
@@ -114,8 +126,50 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity {
     }
 
     public void setAccelerateMultiplier(int accelerateMultiplier) {
-        this.accelerateMultiplier = Mth.clamp(accelerateMultiplier, 2, 4);
-        this.consumed = (int) (BASE_CONSUMPTION * Math.pow(3, accelerateMultiplier));
+        this.accelerateMultiplier = Mth.clamp(accelerateMultiplier, MIN_MULTIPLIER, MAX_MULTIPLIER);
+        this.consumed = consumptionOf(this.accelerateMultiplier);
+        setChanged();
+    }
+
+    private static int consumptionOf(int multiplier) {
+        return (int) (BASE_CONSUMPTION * Math.pow(3, Mth.clamp(multiplier, MIN_MULTIPLIER, MAX_MULTIPLIER)));
+    }
+
+    public void addBlacklist(ResourceLocation block) {
+        if (blacklist.add(block)) setChanged();
+    }
+
+    public void removeBlacklist(ResourceLocation block) {
+        if (blacklist.remove(block)) setChanged();
+    }
+
+    public long getChrononStored() {
+        ChrononNetwork network = network();
+        return network == null ? 0 : network.getChrononStored();
+    }
+
+    public long getChrononCapacity() {
+        ChrononNetwork network = network();
+        return network == null ? 0 : network.getCapacity();
+    }
+
+    @Nullable
+    private ChrononNetwork network() {
+        if (innerNetwork == null && uuid != null && level instanceof ServerLevel serverLevel) {
+            innerNetwork = ChrononNetworkData.getLevelNetwork(serverLevel, uuid);
+        }
+        return innerNetwork;
+    }
+
+    @Override
+    @NotNull
+    public Component getDisplayName() {
+        return TECBlocks.ACCELERATOR.get().getName();
+    }
+
+    @Override
+    public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
+        return new MenuAccelerator(containerId, playerInventory, this);
     }
 
     @Override
@@ -126,7 +180,8 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity {
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        this.accelerateMultiplier = Mth.clamp(tag.getInt("acc_multiplier"), 2, 4);
+        this.accelerateMultiplier = Mth.clamp(tag.getInt("acc_multiplier"), MIN_MULTIPLIER, MAX_MULTIPLIER);
+        this.consumed = consumptionOf(this.accelerateMultiplier);
 
         ListTag blacklistTag = tag.getList("blacklist", StringTag.TAG_STRING);
         for (int i = 0; i < blacklistTag.size(); ++i) {

@@ -2,9 +2,12 @@ package org.moshang.tempusetchaos.client.gui;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 import org.moshang.tempusetchaos.client.gui.element.UiElement;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.List;
 
 /**
  * A window that hosts elements. Elements live in the window's own space, the host translates the pose for them.
@@ -47,6 +50,17 @@ public abstract class AbstractUiWindow implements IUiWindow {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderContent(graphics, mouseX, mouseY, partialTick);
         elements.render(graphics, mouseX, mouseY, partialTick);
+        renderTooltips(graphics, mouseX, mouseY);
+    }
+
+    /** Element tooltips are drawn last, otherwise later elements would paint over them. */
+    protected void renderTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
+        UiElement hovered = elements.getHovered();
+        if (hovered == null) return;
+        List<Component> tooltip = hovered.getTooltip();
+        if (tooltip.isEmpty()) return;
+        List<FormattedCharSequence> lines = tooltip.stream().map(Component::getVisualOrderText).toList();
+        graphics.renderTooltip(Minecraft.getInstance().font, lines, mouseX, mouseY);
     }
 
     protected abstract void renderContent(GuiGraphics graphics, int mouseX, int mouseY, float partialTick);

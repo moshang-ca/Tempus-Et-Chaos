@@ -95,7 +95,7 @@ public abstract class AbstractContainerWindow<T extends AbstractContainerMenu> e
 
     @Override
     protected void renderContent(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        host.renderWithTooltip(graphics, mouseX, mouseY, partialTick);
+        host.render(graphics, mouseX, mouseY, partialTick);
     }
 
     @Override
@@ -205,6 +205,12 @@ public abstract class AbstractContainerWindow<T extends AbstractContainerMenu> e
                 placed = true;
             }
             applyPosition();
+        }
+
+        @Override
+        public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+            super.render(guiGraphics, mouseX, mouseY, partialTick);
+            renderTooltip(guiGraphics, mouseX, mouseY);
         }
 
         @Override

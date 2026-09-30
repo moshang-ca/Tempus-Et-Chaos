@@ -31,6 +31,7 @@ public class TempusEtChaos {
         TECFluids.FLUID_DR.register(modEventBus);
         TECRecipes.RECIPE_TYPE_DR.register(modEventBus);
         TECRecipes.RECIPE_SERIALIZER_DR.register(modEventBus);
+        TECMenus.MENU_DR.register(modEventBus);
 
         modEventBus.addListener(TECCapabilities::register);
     }

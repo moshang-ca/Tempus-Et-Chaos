@@ -175,6 +175,11 @@ public class UiHost<T extends IUiNode> {
         if (node != null) node.onFocusChanged(true);
     }
 
+    @Nullable
+    public T getHovered() {
+        return hovered;
+    }
+
     public void bringToFront(T node) {
         if (!nodes.contains(node)) return;
         nodes.remove(node);
