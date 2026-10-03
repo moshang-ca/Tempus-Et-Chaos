@@ -2,44 +2,34 @@ package org.moshang.tempusetchaos.client.gui.element;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import org.moshang.tempusetchaos.client.gui.anim.AnimValue;
+import org.moshang.tempusetchaos.client.gui.UiTextures;
+import org.moshang.tempusetchaos.client.gui.anim.Anims;
 import org.moshang.tempusetchaos.client.gui.anim.Easing;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.function.IntConsumer;
 import java.util.function.Supplier;
 
-/** A value field: left click steps up, right click steps down. */
+/** A value field: left click steps up, right click steps down. The hover wash is an attached animation. */
 @ParametersAreNonnullByDefault
 public class InputFieldElement extends UiElement {
     private final Supplier<String> text;
     private final IntConsumer onStep;
-    private final AnimValue hover = new AnimValue(0f);
 
     public InputFieldElement(int x, int y, Supplier<String> text, IntConsumer onStep) {
-        this.x = x;
-        this.y = y;
-        this.width = 100;
-        this.height = 16;
+        this(x, y, 100, 16, text, onStep);
+    }
+
+    public InputFieldElement(int x, int y, int width, int height, Supplier<String> text, IntConsumer onStep) {
+        super(x, y, width, height);
         this.text = text;
         this.onStep = onStep;
-    }
-
-    @Override
-    public void onHoverChanged(boolean hovered) {
-        hover.to(hovered ? 1f : 0f, 120, Easing.EASE_OUT_QUAD);
-    }
-
-    @Override
-    public void updateAnimation() {
-        hover.update();
+        anims().add(Anims.hoverOverlay(0.25f, 120, Easing.EASE_OUT_QUAD));
     }
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        graphics.blit(UiTextures.INPUT_FIELD, 0, 0, getWidth(), getHeight(), 0f, 0f, getWidth(), getHeight(), getWidth(), getHeight());
-        float highlight = hover.getValue();
-        if (highlight > 0.01f) graphics.fill(0, 0, getWidth(), getHeight(), (int) (highlight * 0x40) << 24 | 0xFFFFFF);
+        graphics.blitSprite(UiTextures.INPUT_FIELD, 0, 0, getWidth(), getHeight());
         graphics.drawCenteredString(Minecraft.getInstance().font, text.get(), getWidth() / 2, (getHeight() - 8) / 2, 0xFFFFFF);
     }
 

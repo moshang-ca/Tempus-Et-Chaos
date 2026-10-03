@@ -78,7 +78,6 @@ public class ChrononNetwork implements IChrononStorage {
         ChrononNetwork other = networkData.getNetwork(networkId);
         if (other == null) return;
 
-        this.capacity += other.capacity;
         this.chrononStored += other.chrononStored;
         for (BlockPos nodePos : other.getConnectors()) {
             IChrononNode node = getNodeAt(nodePos);

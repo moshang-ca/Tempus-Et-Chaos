@@ -23,6 +23,12 @@ public interface IUiNode {
     default void onFocusChanged(boolean focused) {}
     default void onHoverChanged(boolean hovered) {}
 
+    /** The host was asked to close this node, but has not removed it yet: the exit animation starts here. */
+    default void onClosing() {}
+
+    /** Whether an exit animation is still playing, meaning the host has to keep the node around. */
+    default boolean isClosing() { return false; }
+
     int getX();
     int getY();
     int getWidth();
@@ -44,6 +50,20 @@ public interface IUiNode {
     default AnimProps getRenderProps() { return null; }
 
     void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick);
+
+    /**
+     * Drawn by the host after every node has had its {@link #render}, with no clip and no pose, and with the mouse in
+     * host space. This is the place for content that belongs above the whole screen instead of inside the node's own
+     * stacking, like the item on the cursor.
+     */
+    default void renderForeground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {}
+
+    /**
+     * Drawn by the host once every node has had its {@link #renderForeground}, for the node the mouse is on, with no
+     * clip and no pose, and with the mouse in host space. This is the place for tooltips: they follow the cursor past
+     * the node's own bounds, but stay under whatever covers the node.
+     */
+    default void renderOverlay(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {}
 
     default void mouseMoved(double mouseX, double mouseY) {}
     default boolean isMouseClicked(double mouseX, double mouseY, int button) { return false; }

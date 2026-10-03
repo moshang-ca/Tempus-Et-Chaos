@@ -1,34 +1,37 @@
 package org.moshang.tempusetchaos.blockentity;
 
+import com.mojang.logging.LogUtils;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.moshang.tempusetchaos.api.BaseChrononNodeBlockEntity;
+import org.moshang.tempusetchaos.util.MatchSet;
 import org.moshang.tempusetchaos.registry.TECBlockEntities;
+import org.slf4j.Logger;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @ParametersAreNonnullByDefault
 public class BEReducer extends BaseChrononNodeBlockEntity {
     private static final int BASE_CONSUMPTION = 5;
     private static final int MAX_RED_ENTITY = 32;
+    private static final Logger LOGGER = LogUtils.getLogger();
 
-    private final Set<ResourceLocation> blacklist = new HashSet<>();
+    @Getter
+    private final MatchSet blacklist = new MatchSet();
     private final List<Entity> entityCache = new ArrayList<>();
     private final int randomUpdateTick;
     private final AABB area;
@@ -58,8 +61,9 @@ public class BEReducer extends BaseChrononNodeBlockEntity {
         if (tickCounter % 20 == randomUpdateTick) {
             entityCache.clear();
             entityCache.addAll(level.getEntities((Entity) null, area, entity -> {
-                ResourceLocation entityTypeName = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
-                return !blacklist.contains(entityTypeName);
+                EntityType<?> type = entity.getType();
+                ResourceLocation entityTypeName = BuiltInRegistries.ENTITY_TYPE.getKey(type);
+                return !blacklist.matchEntity(entityTypeName, type);
             }));
         }
         if (innerNetwork != null) {
@@ -100,25 +104,25 @@ public class BEReducer extends BaseChrononNodeBlockEntity {
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         this.reduceMultiplier = Mth.clamp(tag.getInt("red_multiplier"), 2, 4);
-
-        ListTag blacklistTag = tag.getList("blacklist", StringTag.TAG_STRING);
-        for (int i = 0; i < blacklistTag.size(); ++i) {
-            ResourceLocation blacked = ResourceLocation.tryParse(blacklistTag.getString(i));
-            if (blacked != null) {
-                blacklist.add(blacked);
-            }
-        }
+        MatchSet.CODEC.parse(NbtOps.INSTANCE, tag.getCompound("blacklist"))
+                .resultOrPartial(error -> LOGGER.warn("Failed to load blacklist: {}", error))
+                .ifPresent(loaded -> loaded.ordered().forEach(this.blacklist::add));
     }
 
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         tag.putInt("red_multiplier", this.reduceMultiplier);
+        MatchSet.CODEC.encodeStart(NbtOps.INSTANCE, this.blacklist)
+                .resultOrPartial(error -> LOGGER.warn("Failed to save blacklist: {}", error))
+                .ifPresent(nbt -> tag.put("blacklist", nbt));
+    }
 
-        ListTag blacklistTag = new ListTag();
-        for (ResourceLocation blacked : blacklist) {
-            blacklistTag.add(StringTag.valueOf(blacked.toString()));
-        }
-        tag.put("blacklist", blacklistTag);
+    public void addBlacklist(MatchSet.Entry entry) {
+        if (blacklist.add(entry)) setChanged();
+    }
+
+    public void removeBlacklist(MatchSet.Entry entry) {
+        if (blacklist.remove(entry)) setChanged();
     }
 }

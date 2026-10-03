@@ -4,6 +4,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
+import org.moshang.tempusetchaos.client.gui.anim.AnimSet;
+import org.moshang.tempusetchaos.client.gui.anim.Animated;
 import org.moshang.tempusetchaos.client.gui.element.UiElement;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -13,8 +15,20 @@ import java.util.List;
  * A window that hosts elements. Elements live in the window's own space, the host translates the pose for them.
  */
 @ParametersAreNonnullByDefault
-public abstract class AbstractUiWindow implements IUiWindow {
+@SuppressWarnings("unused")
+public abstract class AbstractUiWindow implements IUiWindow, Animated {
     protected final UiHost<UiElement> elements = new UiHost<>();
+    private final AnimSet anims = new AnimSet();
+
+    @Override
+    public AnimSet anims() {
+        return anims;
+    }
+
+    /** The window's own element space, so whoever holds the window can map an element's box out to the screen. */
+    public UiHost<UiElement> elements() {
+        return elements;
+    }
 
     @Override
     public void init(Minecraft mc, int screenWidth, int screenHeight) {
@@ -31,8 +45,10 @@ public abstract class AbstractUiWindow implements IUiWindow {
         elements.tick();
     }
 
+    /** Both halves matter: the window's own animations and every element's. */
     @Override
     public void updateAnimation() {
+        anims.tick();
         elements.updateAnimations();
     }
 
@@ -50,10 +66,15 @@ public abstract class AbstractUiWindow implements IUiWindow {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderContent(graphics, mouseX, mouseY, partialTick);
         elements.render(graphics, mouseX, mouseY, partialTick);
+    }
+
+    /** The host calls this outside the window's clip, so the tooltip can reach past the window bounds. */
+    @Override
+    public void renderOverlay(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderTooltips(graphics, mouseX, mouseY);
     }
 
-    /** Element tooltips are drawn last, otherwise later elements would paint over them. */
+    /** Element tooltips are drawn after every element, otherwise later elements would paint over them. */
     protected void renderTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
         UiElement hovered = elements.getHovered();
         if (hovered == null) return;

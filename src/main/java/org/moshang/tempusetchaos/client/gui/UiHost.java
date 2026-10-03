@@ -5,12 +5,15 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL11;
+import org.moshang.tempusetchaos.client.gui.anim.Anim;
 import org.moshang.tempusetchaos.client.gui.anim.AnimProps;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Holds a flat list of nodes living in one space: the screen for {@link WindowManager}, a window for its elements.
@@ -26,6 +29,8 @@ public class UiHost<T extends IUiNode> {
     private final List<T> pendingRemove = new ArrayList<>();
     private final List<T> pendingClose = new ArrayList<>();
     private final List<T> needsInit = new ArrayList<>();
+    /** Nodes whose exit animation is still playing: still drawn, no longer interactive, not removed yet. */
+    private final Set<T> closing = new LinkedHashSet<>();
 
     private int hostWidth;
     private int hostHeight;
@@ -41,6 +46,15 @@ public class UiHost<T extends IUiNode> {
 
     public UiHost() {
         this.mc = Minecraft.getInstance();
+    }
+
+    /**
+     * Drops the depth the node just wrote, so whatever is painted next can cover it. Items sit above the
+     * plain gui layer and guessing their z is fragile, so the depth buffer is cleared instead.
+     */
+    public static void clearContentDepth(GuiGraphics graphics) {
+        graphics.flush();
+        RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT, Minecraft.ON_OSX);
     }
 
     public void init(int hostWidth, int hostHeight) {
@@ -88,17 +102,38 @@ public class UiHost<T extends IUiNode> {
             for (T node : nodes) {
                 node.updateAnimation();
             }
+            finishClosings();
         } finally {
             exit();
         }
     }
 
-    public void add(T node) {
+    /** Drop every node whose exit animation just ended. */
+    private void finishClosings() {
+        if (closing.isEmpty()) return;
+        List<T> done = null;
+        for (T node : closing) {
+            if (node.isClosing()) continue;
+            if (done == null) done = new ArrayList<>();
+            done.add(node);
+        }
+        if (done == null) return;
+        for (T node : done) {
+            closing.remove(node);
+            if (nodes.remove(node)) {
+                node.onClose();
+                onNodeRemoved(node);
+            }
+        }
+    }
+
+    public UiHost<T> add(T node) {
         if (dispatchDepth > 0) {
             pendingAdd.add(node);
-            return;
+        } else {
+            doAdd(node);
         }
-        doAdd(node);
+        return this;
     }
 
     public void remove(T node) {
@@ -190,15 +225,16 @@ public class UiHost<T extends IUiNode> {
         enter();
         try {
             for (T node : nodes) {
-                if (!isInteractive(node)) continue;
+                // a closing node still renders, it just no longer takes input
+                if (!isRenderable(node)) continue;
 
                 AnimProps props = node.getRenderProps();
                 // render always gets the real local mouse position: the carried item and the tooltip follow the cursor even
                 // outside the node, what ends up visible is decided by the stacking order below
                 AnimProps.Local local = localPoint(node, mouseX, mouseY);
 
-                // earlier nodes may write a higher gui z (items sit at +100), clear the depth they left behind
-                RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT, Minecraft.ON_OSX);
+                // earlier nodes may write a higher gui z (items sit above the gui layer), drop that depth again
+                clearContentDepth(graphics);
                 boolean clipped = applyClip(graphics, node, props);
 
                 var pose = graphics.pose();
@@ -213,12 +249,32 @@ public class UiHost<T extends IUiNode> {
 
                 try {
                     node.render(graphics, (int) local.x(), (int) local.y(), partialTick);
+                    if (props != null && props.overlay > Anim.EPSILON) {
+                        int overlay = Math.clamp(Math.round(props.overlay * 255f), 0, 255) << 24 | 0xFFFFFF;
+                        clearContentDepth(graphics);
+                        graphics.fill(0, 0, node.getWidth(), node.getHeight(), overlay);
+                    }
                     graphics.flush();
                 } finally {
                     if (alpha < 1f) graphics.setColor(1f, 1f, 1f, 1f);
                     pose.popPose();
                     if (clipped) graphics.disableScissor();
                 }
+            }
+
+            // unclipped and unposed passes: first whatever has to sit above the whole screen, then the cursor's tooltip
+            for (T node : nodes) {
+                if (!isRenderable(node)) continue;
+                clearContentDepth(graphics);
+                node.renderForeground(graphics, mouseX, mouseY, partialTick);
+                graphics.flush();
+            }
+
+            T overlay = topmostAt(mouseX, mouseY);
+            if (overlay != null) {
+                clearContentDepth(graphics);
+                overlay.renderOverlay(graphics, mouseX, mouseY, partialTick);
+                graphics.flush();
             }
         } finally {
             exit();
@@ -285,7 +341,12 @@ public class UiHost<T extends IUiNode> {
             T captured = button == 0 ? dragging : null;
             if (button == 0) dragging = null;
             if (captured == null) captured = topmostAt(mouseX, mouseY);
-            if (captured == null) return false;
+            if (captured == null) {
+                // a press outside every node belonged to the focused one, so its release does too
+                T focused = getFocused();
+                if (focused == null || !handlesOutsideClick(focused)) return false;
+                captured = focused;
+            }
             AnimProps.Local local = localPoint(captured, mouseX, mouseY);
             return captured.isMouseReleased(local.x(), local.y(), button);
         } finally {
@@ -358,10 +419,19 @@ public class UiHost<T extends IUiNode> {
         return node.isMouseOver(local.x(), local.y());
     }
 
-    protected boolean isInteractive(T node) {
+    /** Whether the node can be drawn at all. A closing node still can, it is only kept out of the input path. */
+    protected boolean isRenderable(T node) {
         if (!node.isVisible()) return false;
         AnimProps props = node.getRenderProps();
         return props == null || props.isVisible();
+    }
+
+    protected boolean isInteractive(T node) {
+        return isRenderable(node) && !closing.contains(node);
+    }
+
+    protected final boolean isClosing(T node) {
+        return closing.contains(node);
     }
 
     /** Host space point -> the node's own space. */
@@ -371,6 +441,13 @@ public class UiHost<T extends IUiNode> {
             return new AnimProps.Local(mouseX - node.getX(), mouseY - node.getY());
         }
         return props.toLocal(mouseX, mouseY, node.getX(), node.getY(), node.getWidth(), node.getHeight());
+    }
+
+    /** The node's own space point -> this host's space, the exact inverse of {@link #localPoint}. */
+    public AnimProps.Local toHost(T node, double localX, double localY) {
+        AnimProps props = node.getRenderProps();
+        if (props == null || props.isIdentity()) return new AnimProps.Local(localX + node.getX(), localY + node.getY());
+        return props.toHost(localX, localY, node.getX(), node.getY(), node.getWidth(), node.getHeight());
     }
 
     /** Scissor the node, in host space. Returns whether a scissor was enabled. */
@@ -420,6 +497,7 @@ public class UiHost<T extends IUiNode> {
     private void doRemove(T node) {
         needsInit.remove(node);
         pendingAdd.remove(node);
+        closing.remove(node);
         if (dragging == node) dragging = null;
         if (hovered == node) hovered = null;
         boolean focusLost = focused == node;
@@ -445,13 +523,19 @@ public class UiHost<T extends IUiNode> {
         if (dragging != null && doomed.contains(dragging)) dragging = null;
         if (hovered != null && doomed.contains(hovered)) hovered = null;
         for (int i = doomed.size() - 1; i >= 0; i--) {
-            T closing = doomed.get(i);
-            needsInit.remove(closing);
-            pendingAdd.remove(closing);
-            if (nodes.remove(closing)) {
-                closing.onClose();
-                onNodeRemoved(closing);
+            T target = doomed.get(i);
+            needsInit.remove(target);
+            pendingAdd.remove(target);
+            if (closing.contains(target) || !nodes.contains(target)) continue;
+            target.onClosing();
+            if (target.isClosing()) {
+                // the exit animation keeps it rendered, but it is already out of the input path and unfocused
+                closing.add(target);
+                continue;
             }
+            nodes.remove(target);
+            target.onClose();
+            onNodeRemoved(target);
         }
         if (focusLost) setFocused(focusFallback(node));
     }
@@ -463,6 +547,7 @@ public class UiHost<T extends IUiNode> {
         pendingRemove.clear();
         pendingClose.clear();
         needsInit.clear();
+        closing.clear();
         dragging = null;
         hovered = null;
         focused = null;

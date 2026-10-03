@@ -2,6 +2,15 @@ package org.moshang.tempusetchaos.client.gui.anim;
 
 import lombok.Getter;
 
+/**
+ * <b>A driver</b>: the tween state of a single scalar, moving from its previous value to a target.
+ * {@link #update()} is meant to be called once per frame by whoever drives it (see {@link Anims}); the
+ * value itself is then read through {@link #getValue()}.
+ * <p>
+ * Elements that only need to <i>read</i> an animated number keep one of these as a handle and hand it to
+ * an {@code Anims.tween(...)}. They must not call {@code to()} / {@code update()} themselves.
+ */
+@SuppressWarnings("unused")
 public class AnimValue {
     @Getter
     private float value;
@@ -19,7 +28,7 @@ public class AnimValue {
 
     /**
      * Snap to the target, no animation.
-     * */
+     */
     public void snap(float v) {
         value = from = to = v;
         this.running = false;
@@ -42,12 +51,11 @@ public class AnimValue {
     public void update() {
         if (!running) return;
         long elapsed = Anim.now() - startMs;
-        if (elapsed >= durationMs) {
+        if (Anim.finished(elapsed, durationMs)) {
             value = to;
             running = false;
             return;
         }
-        float t = elapsed / (float) durationMs;
-        value = from + (to - from) * easing.ease(t);
+        value = Anim.lerp(from, to, easing.ease(Anim.normalize(elapsed, durationMs)));
     }
 }

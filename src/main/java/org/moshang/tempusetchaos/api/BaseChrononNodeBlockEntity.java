@@ -4,9 +4,11 @@ import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.Nullable;
 import org.moshang.tempusetchaos.blockentity.network.ChrononNetwork;
 import org.moshang.tempusetchaos.data.ChrononNetworkData;
 
@@ -39,6 +41,7 @@ public abstract class BaseChrononNodeBlockEntity extends BlockEntity implements 
     @Override
     public void setNetworkUUID(UUID uuid) {
         this.uuid = uuid;
+        innerNetwork = null;
     }
 
     @Override
@@ -49,6 +52,24 @@ public abstract class BaseChrononNodeBlockEntity extends BlockEntity implements 
     @Override
     public BlockPos getNodePos() {
         return getBlockPos();
+    }
+
+    public long getChrononStored() {
+        ChrononNetwork network = network();
+        return network == null ? 0 : network.getChrononStored();
+    }
+
+    public long getChrononCapacity() {
+        ChrononNetwork network = network();
+        return network == null ? 0 : network.getCapacity();
+    }
+
+    @Nullable
+    private ChrononNetwork network() {
+        if (innerNetwork == null && uuid != null && level instanceof ServerLevel serverLevel) {
+            innerNetwork = ChrononNetworkData.getLevelNetwork(serverLevel, uuid);
+        }
+        return innerNetwork;
     }
 
     @Override

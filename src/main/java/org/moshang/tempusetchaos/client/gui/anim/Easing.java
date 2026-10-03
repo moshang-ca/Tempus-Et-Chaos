@@ -1,5 +1,9 @@
 package org.moshang.tempusetchaos.client.gui.anim;
 
+/**
+ * Shape of a transition: maps a normalized progress to a normalized position. Most curves map
+ * [0, 1] onto [0, 1]; back, elastic and bounce overshoot or undershoot on purpose.
+ */
 @SuppressWarnings({"unused"})
 @FunctionalInterface
 public interface Easing {

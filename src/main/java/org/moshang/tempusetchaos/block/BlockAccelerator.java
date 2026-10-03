@@ -2,16 +2,12 @@ package org.moshang.tempusetchaos.block;
 
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.moshang.tempusetchaos.api.BaseChrononMachineryBlock;
@@ -32,16 +28,6 @@ public class BlockAccelerator extends BaseChrononMachineryBlock {
     @NotNull
     protected MapCodec<? extends HorizontalDirectionalBlock> codec() {
         return CODEC;
-    }
-
-    @Override
-    @NotNull
-    public InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
-        if (level.getBlockEntity(pos) instanceof BEAccelerator accelerator && player instanceof ServerPlayer serverPlayer) {
-            serverPlayer.openMenu(accelerator);
-            return InteractionResult.CONSUME;
-        }
-        return InteractionResult.SUCCESS;
     }
 
     @Override

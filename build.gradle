@@ -25,6 +25,10 @@ repositories {
     maven {
         url = "https://api.modrinth.com/maven"
     }
+    maven {
+        name = "Jared's maven"
+        url = "https://maven.blamejared.com/"
+    }
 }
 
 base {
@@ -83,8 +87,13 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 dependencies {
     // Jade
-    compileOnly "maven.modrinth:jade:${project.jade_version}"
-    runtimeOnly "maven.modrinth:jade:${project.jade_version}"
+    compileOnly "maven.modrinth:jade:${jade_version}"
+    runtimeOnly "maven.modrinth:jade:${jade_version}"
+
+    // JEI
+    compileOnly("mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}")
+    runtimeOnly("mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}")
+
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {

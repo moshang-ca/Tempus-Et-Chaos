@@ -1,34 +1,27 @@
 package org.moshang.tempusetchaos.blockentity;
 
+import com.mojang.logging.LogUtils;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.StringTag;
-import net.minecraft.network.chat.Component;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
-import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.moshang.tempusetchaos.api.BaseChrononNodeBlockEntity;
-import org.moshang.tempusetchaos.blockentity.network.ChrononNetwork;
-import org.moshang.tempusetchaos.data.ChrononNetworkData;
-import org.moshang.tempusetchaos.menu.MenuAccelerator;
+import org.moshang.tempusetchaos.util.MatchSet;
 import org.moshang.tempusetchaos.registry.TECBlockEntities;
-import org.moshang.tempusetchaos.registry.TECBlocks;
+import org.slf4j.Logger;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.ArrayList;
@@ -37,13 +30,15 @@ import java.util.List;
 import java.util.Set;
 
 @ParametersAreNonnullByDefault
-public class BEAccelerator extends BaseChrononNodeBlockEntity implements MenuProvider {
-    @Getter
-    private static final Set<ResourceLocation> DEFAULT_BLACKLIST = new HashSet<>();
+public class BEAccelerator extends BaseChrononNodeBlockEntity {
+    private static final Set<MatchSet.Entry> DEFAULT_BLACKLIST = new HashSet<>();
+    private static final int[] CONSUMPTION = new int[1025];
     private static final int BASE_CONSUMPTION = 5;     // 5 ch/tick
-    private static final int MAX_ACC_ENTITY = 32;     // 32 entity/acc (in default)
-    private static final int MIN_MULTIPLIER = 2;
-    private static final int MAX_MULTIPLIER = 4;
+    private static final int MAX_ACC_ENTITY = 32;      // 32 entity/acc (in default)
+    public static final int MIN_MULTIPLIER = 2;
+    public static final int MAX_MULTIPLIER = 4;
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     public static void initDefault() {
 
@@ -51,8 +46,14 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity implements MenuPro
 
     private static int randomTicks;
 
+    static {
+        for (int i = 1; i <= 1024; ++i) {
+            CONSUMPTION[i] = (int) (BASE_CONSUMPTION * (i * i + StrictMath.pow(i, 1.8) * (StrictMath.log(i) * 1.4426950408889634)));
+        }
+    }
+
     @Getter
-    private final Set<ResourceLocation> blacklist = new HashSet<>();
+    private final MatchSet blacklist = new MatchSet();
     private final List<Entity> entityCache = new ArrayList<>();
     private final AABB area;
     @Getter
@@ -77,16 +78,17 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity implements MenuPro
         if (tickCounter % 20 == 1) {
             entityCache.clear();
             entityCache.addAll(level.getEntities((Entity) null, area, entity -> {
-                ResourceLocation entityTypeName = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
-                return !(DEFAULT_BLACKLIST.contains(entityTypeName) || blacklist.contains(entityTypeName));
+                EntityType<?> type = entity.getType();
+                ResourceLocation entityTypeName = BuiltInRegistries.ENTITY_TYPE.getKey(type);
+                return !(DEFAULT_BLACKLIST.contains(MatchSet.Entry.entity(entityTypeName)) || blacklist.matchEntity(entityTypeName, type));
             }));
         }
         if (innerNetwork != null) {
-           long extract = innerNetwork.extractChronon(getConsumed(), false);
-           if (extract == getConsumed()) {
+            long extract = innerNetwork.extractChronon(getConsumed(), false);
+            if (extract == getConsumed()) {
                 accelerateBlocks();
                 accelerateEntities();
-           }
+            }
         }
     }
 
@@ -97,7 +99,7 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity implements MenuPro
             assert level != null;
             BlockState state = level.getBlockState(pos);
             ResourceLocation blockName = BuiltInRegistries.BLOCK.getKey(state.getBlock());
-            if (DEFAULT_BLACKLIST.contains(blockName) || blacklist.contains(blockName)) return;
+            if (DEFAULT_BLACKLIST.contains(MatchSet.Entry.block(blockName)) || blacklist.matchBlock(blockName, state)) return;
             if (state.isRandomlyTicking() && level.random.nextInt(randomTicks) < Math.min(extraTicks, randomTicks)) {
                 state.randomTick((ServerLevel) level, pos, level.random);
             } else  {
@@ -132,44 +134,16 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity implements MenuPro
     }
 
     private static int consumptionOf(int multiplier) {
-        return (int) (BASE_CONSUMPTION * Math.pow(3, Mth.clamp(multiplier, MIN_MULTIPLIER, MAX_MULTIPLIER)));
+        return multiplier <= 1024 ? CONSUMPTION[multiplier]
+                : (int) (BASE_CONSUMPTION * (multiplier * multiplier + StrictMath.pow(multiplier, 1.8) * StrictMath.log(multiplier) * 1.4426950408889634));
     }
 
-    public void addBlacklist(ResourceLocation block) {
-        if (blacklist.add(block)) setChanged();
+    public void addBlacklist(MatchSet.Entry entry) {
+        if (blacklist.add(entry)) setChanged();
     }
 
-    public void removeBlacklist(ResourceLocation block) {
-        if (blacklist.remove(block)) setChanged();
-    }
-
-    public long getChrononStored() {
-        ChrononNetwork network = network();
-        return network == null ? 0 : network.getChrononStored();
-    }
-
-    public long getChrononCapacity() {
-        ChrononNetwork network = network();
-        return network == null ? 0 : network.getCapacity();
-    }
-
-    @Nullable
-    private ChrononNetwork network() {
-        if (innerNetwork == null && uuid != null && level instanceof ServerLevel serverLevel) {
-            innerNetwork = ChrononNetworkData.getLevelNetwork(serverLevel, uuid);
-        }
-        return innerNetwork;
-    }
-
-    @Override
-    @NotNull
-    public Component getDisplayName() {
-        return TECBlocks.ACCELERATOR.get().getName();
-    }
-
-    @Override
-    public AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
-        return new MenuAccelerator(containerId, playerInventory, this);
+    public void removeBlacklist(MatchSet.Entry entry) {
+        if (blacklist.remove(entry)) setChanged();
     }
 
     @Override
@@ -182,25 +156,17 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity implements MenuPro
         super.loadAdditional(tag, registries);
         this.accelerateMultiplier = Mth.clamp(tag.getInt("acc_multiplier"), MIN_MULTIPLIER, MAX_MULTIPLIER);
         this.consumed = consumptionOf(this.accelerateMultiplier);
-
-        ListTag blacklistTag = tag.getList("blacklist", StringTag.TAG_STRING);
-        for (int i = 0; i < blacklistTag.size(); ++i) {
-            ResourceLocation blacked = ResourceLocation.tryParse(blacklistTag.getString(i));
-            if (blacked != null) {
-                blacklist.add(blacked);
-            }
-        }
+        MatchSet.CODEC.parse(NbtOps.INSTANCE, tag.getCompound("blacklist"))
+                .resultOrPartial(error -> LOGGER.warn("Failed to load blacklist: {}", error))
+                .ifPresent(loaded -> loaded.ordered().forEach(this.blacklist::add));
     }
 
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         tag.putInt("acc_multiplier", this.accelerateMultiplier);
-
-        ListTag blacklistTag = new ListTag();
-        for (ResourceLocation blacked : blacklist) {
-            blacklistTag.add(StringTag.valueOf(blacked.toString()));
-        }
-        tag.put("blacklist", blacklistTag);
+        MatchSet.CODEC.encodeStart(NbtOps.INSTANCE, this.blacklist)
+                .resultOrPartial(error -> LOGGER.warn("Failed to save blacklist: {}", error))
+                .ifPresent(nbt -> tag.put("blacklist", nbt));
     }
 }

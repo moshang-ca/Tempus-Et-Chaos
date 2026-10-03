@@ -3,9 +3,13 @@ package org.moshang.tempusetchaos.client.gui;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.List;
 
 @ParametersAreNonnullByDefault
 public abstract class AbstractWindowScreen extends Screen {
@@ -13,6 +17,17 @@ public abstract class AbstractWindowScreen extends Screen {
 
     protected AbstractWindowScreen(Component title) {
         super(title);
+    }
+
+    /** The ghost slots of this screen that take the stack, in screen coordinates. */
+    public List<WindowManager.GhostTarget> ghostSlots(ItemStack stack) {
+        return windows.ghostSlots(stack);
+    }
+
+    /** The box the open windows occupy by layout, in screen coordinates, their animations left out. Null when nothing is open. */
+    @Nullable
+    public Rect2i windowArea() {
+        return windows.bounds();
     }
 
     @Override
@@ -37,6 +52,12 @@ public abstract class AbstractWindowScreen extends Screen {
     public void removed() {
         windows.disposeAll();
         super.removed();
+    }
+
+    /** Keep the integrated server running, the windows read live values from it. */
+    @Override
+    public boolean isPauseScreen() {
+        return false;
     }
 
     @Override

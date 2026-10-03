@@ -3,6 +3,7 @@ package org.moshang.tempusetchaos.client.gui.element;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import org.moshang.tempusetchaos.client.gui.UiTextures;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -26,10 +27,7 @@ public class ResourceGaugeElement extends UiElement {
 
     public ResourceGaugeElement(int x, int y, int width, int height, ResourceLocation texture,
                                 Supplier<Float> ratio, int fillColor, @Nullable ResourceLocation resourceSprite, Supplier<List<Component>> tooltip) {
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
+        super(x, y, width, height);
         this.texture = texture;
         this.ratio = ratio;
         this.fillColor = fillColor;
@@ -45,7 +43,11 @@ public class ResourceGaugeElement extends UiElement {
         if (resourceSprite == null) {
             graphics.fill(1, getHeight() - 1 - fill, getWidth() - 1, getHeight() - 1, fillColor);
         } else {
-            graphics.blitSprite(resourceSprite, 1, getHeight() - 1 - fill, getWidth() - 1, getHeight() - 1);
+            int innerWidth = getWidth() - 2;
+            int innerHeight = getHeight() - 2;
+
+            UiTextures.blitTranslucentSprite(graphics, resourceSprite, innerWidth, innerHeight,
+                    0, innerHeight - fill, 1, getHeight() - 1 - fill, innerWidth, fill);
         }
     }
 

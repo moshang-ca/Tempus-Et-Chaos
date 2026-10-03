@@ -14,10 +14,7 @@ public class TextElement extends UiElement {
     private final int color;
 
     public TextElement(int x, int y, int width, int height, Supplier<Component> text, int color) {
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
+        super(x, y, width, height);
         this.text = text;
         this.color = color;
     }
