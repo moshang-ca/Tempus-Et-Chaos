@@ -19,3 +19,12 @@ hs_err_pid*
 
 # Common working directory
 run
+
+# Datagen cache
+src/generated/resources/.cache
+
+# Scratch files
+.tmp
+
+# Tooling reference material
+.ai_tool

@@ -5,15 +5,20 @@ import mezz.jei.api.gui.handlers.IScreenHandler;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.Rect2i;
 import org.jetbrains.annotations.Nullable;
-import org.moshang.tempusetchaos.client.gui.AbstractWindowScreen;
+import org.moshang.tempusetchaos.client.gui.WindowScreen;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
+/**
+ * Reports where the open windows are, so JEI keeps its ingredient list and bookmark column clear of them.
+ * The same logic serves every window screen, so it is written against {@link WindowScreen} and registered once per
+ * screen base.
+ */
 @ParametersAreNonnullByDefault
-public class WindowScreenProperties implements IScreenHandler<AbstractWindowScreen> {
+public class WindowScreenProperties<T extends Screen & WindowScreen> implements IScreenHandler<T> {
     @Override
     @Nullable
-    public IGuiProperties apply(AbstractWindowScreen screen) {
+    public IGuiProperties apply(T screen) {
         if (screen.width <= 1 || screen.height <= 1) return null;
 
         Rect2i area = screen.windowArea();

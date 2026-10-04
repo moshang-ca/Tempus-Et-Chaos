@@ -7,16 +7,17 @@
   "block.tempusetchaos.entropy_node": "Entropy Node",
   "block.tempusetchaos.entropy_pipe": "Entropy Pipe",
   "block.tempusetchaos.entropy_reactor": "Entropy Reactor",
-  "block.tempusetchaos.gas_entropy_block": "gas_entropy",
+  "block.tempusetchaos.gas_entropy_block": "Gas Entropy",
   "block.tempusetchaos.iron_entropy_vessel": "Iron Entropy Vessel",
   "block.tempusetchaos.netherite_entropy_vessel": "Netherite Entropy Vessel",
   "block.tempusetchaos.obsidian_entropy_vessel": "Obsidian Entropy Vessel",
   "block.tempusetchaos.reducer": "Reducer",
   "block.tempusetchaos.reinforce_entropy_vessel": "Reinforce Entropy Vessel",
   "block.tempusetchaos.time_extractor": "Time Extractor",
-  "fluid.tempusetchaos.gas_entropy": "entropy_gas",
+  "fluid.tempusetchaos.gas_entropy": "Gas Entropy",
   "item.tempusetchaos.entropy_crystal": "Entropy Crystal",
   "item.tempusetchaos.gas_entropy_bucket": "Gas Entropy Bucket",
   "item.tempusetchaos.wrench": "Wrench",
-  "jade.tempusetchaos.fluid_amount": "%s: %s / %s"
+  "jade.tempusetchaos.chronon": "%s / %s ",
+  "jade.tempusetchaos.chronon.short": " %s "
 }

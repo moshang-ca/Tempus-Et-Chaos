@@ -22,7 +22,6 @@ config = "${mod_id}.mixins.json"
 [[dependencies."${mod_id}"]]
 modId = "neoforge"
 type = "required"
-# reason="..."
 versionRange = "${neo_version_range}"
 ordering = "NONE"
 side = "BOTH"
@@ -34,5 +33,16 @@ versionRange = "${minecraft_version_range}"
 ordering = "NONE"
 side = "BOTH"
 
-#[features."${mod_id}"]
-#openGLVersion="[3.2,)"
+[[dependencies."${mod_id}"]]
+modId = "jade"
+type = "optional"
+versionRange = "${jade_version_range}"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies."${mod_id}"]]
+modId = "jei"
+type = "optional"
+versionRange = "${jei_version_range}"
+ordering = "AFTER"
+side = "BOTH"

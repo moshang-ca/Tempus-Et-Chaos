@@ -21,6 +21,9 @@ public interface IChrononNode extends ICableConnectable {
     default int getConsumed() { return 0; }
     default int getCapacity() { return 0; }
 
+    default long getNetChrononStored() { return 0L; }
+    default long getNetChrononCapacity() { return 0L; }
+
     static void onNodePlaced(Level level, BlockPos pos, IChrononNode node) {
         if (!(level instanceof ServerLevel serverLevel)) return;
 

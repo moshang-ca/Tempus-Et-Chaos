@@ -7,6 +7,7 @@ import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.resources.ResourceLocation;
 import org.moshang.tempusetchaos.TempusEtChaos;
 import org.moshang.tempusetchaos.client.gui.AbstractWindowScreen;
+import org.moshang.tempusetchaos.client.gui.ContainerWindowScreen;
 import org.moshang.tempusetchaos.integration.jei.gui.GhostSlotHandler;
 import org.moshang.tempusetchaos.integration.jei.gui.WindowScreenProperties;
 
@@ -23,7 +24,9 @@ public class TECJeiPlugin implements IModPlugin {
 
     @Override
     public void registerGuiHandlers(IGuiHandlerRegistration registration) {
-        registration.addGuiScreenHandler(AbstractWindowScreen.class, new WindowScreenProperties());
-        registration.addGhostIngredientHandler(AbstractWindowScreen.class, new GhostSlotHandler());
+        registration.addGuiScreenHandler(AbstractWindowScreen.class, new WindowScreenProperties<>());
+        registration.addGuiScreenHandler(ContainerWindowScreen.class, new WindowScreenProperties<>());
+        registration.addGhostIngredientHandler(AbstractWindowScreen.class, new GhostSlotHandler<>());
+        registration.addGhostIngredientHandler(ContainerWindowScreen.class, new GhostSlotHandler<>());
     }
 }

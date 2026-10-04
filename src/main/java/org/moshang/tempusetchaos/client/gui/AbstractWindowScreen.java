@@ -12,28 +12,41 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
 
 @ParametersAreNonnullByDefault
-public abstract class AbstractWindowScreen extends Screen {
+public abstract class AbstractWindowScreen extends Screen implements WindowScreen {
     protected final WindowManager windows = new WindowManager(this);
 
     protected AbstractWindowScreen(Component title) {
         super(title);
     }
 
-    /** The ghost slots of this screen that take the stack, in screen coordinates. */
+    @Override
     public List<WindowManager.GhostTarget> ghostSlots(ItemStack stack) {
         return windows.ghostSlots(stack);
     }
 
     /** The box the open windows occupy by layout, in screen coordinates, their animations left out. Null when nothing is open. */
+    @Override
     @Nullable
     public Rect2i windowArea() {
         return windows.bounds();
     }
 
+    /**
+     * Opens the windows of this screen. It runs on every {@link #init()}, which the client calls after a construction
+     * and again whenever this screen comes back to the front or is resized, so it has to be written to build the
+     * windows from scratch rather than to add to whatever is already there. The list is emptied first, the same way
+     * vanilla drops its widgets before rebuilding them.
+     */
+    protected abstract void populate();
+
     @Override
     protected void init() {
         super.init();
         windows.init(width, height);
+        windows.disposeAll();
+        windows.beginPopulate();
+        populate();
+        windows.endPopulate();
     }
 
     @Override
@@ -46,12 +59,6 @@ public abstract class AbstractWindowScreen extends Screen {
     public void tick() {
         super.tick();
         windows.tick();
-    }
-
-    @Override
-    public void removed() {
-        windows.disposeAll();
-        super.removed();
     }
 
     /** Keep the integrated server running, the windows read live values from it. */

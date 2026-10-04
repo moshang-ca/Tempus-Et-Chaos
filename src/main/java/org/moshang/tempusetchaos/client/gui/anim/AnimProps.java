@@ -20,8 +20,8 @@ public final class AnimProps {
     public float alpha = 1f;
     /**
      * White wash drawn over the node once it has rendered, 0 = none, 1 = opaque. It goes on top of
-     * everything the node draws, so it suits elements and plain windows; on an
-     * {@code AbstractContainerWindow} it would also cover the carried item and the tooltip.
+     * everything the node draws, so it suits elements and plain windows; on a
+     * {@code ContainerWindow} it would also cover the carried item, use {@link #alpha} there instead.
      */
     public float overlay;
     public float scaleX = 1f;

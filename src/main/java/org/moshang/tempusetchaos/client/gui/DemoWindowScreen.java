@@ -22,6 +22,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
 
 /**
+ * <h1><b>This should not be published</b></h1>
  * Temporary manual-verification harness. If new ui feature is added, we can test here.
  */
 @ParametersAreNonnullByDefault
@@ -32,30 +33,51 @@ public class DemoWindowScreen extends AbstractWindowScreen {
     private static final Cue SPIN = new Cue(0, 400, Easing.EASE_OUT_CUBIC);
     private static final Cue OPEN = Cue.after(SPIN, 64, 336, Easing.EASE_OUT_EXPO);
     private static final float TURNS = (float) (Math.PI * 4);
-    /** front_icon.png is 10x10: two 6x6 blocks sitting on opposite ends of a diagonal. */
     private static final int ICON_SIZE = 10;
     private static final int ICON_BLOCK = 6;
 
     public DemoWindowScreen() {
         super(Component.literal("Window Demo"));
-        windows.open(new DemoPanel(windows, "parent", null, 40, 40, 170, 180, true));
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player != null) {
-            IUiWindow inventory = new InventoryWindow(mc.player.inventoryMenu, mc.player.getInventory(),
-                    Component.literal("Inventory"), 176, 166);
-            inventory.setPosition(300, 40);
-            windows.open(inventory);
-        }
+    }
+
+    @Override
+    protected void populate() {
+        windows.open(new DemoPanel(windows, "parent", null, 0, 0, 170, 180, true));
     }
 
     @EventBusSubscriber(modid = TempusEtChaos.MODID, value = Dist.CLIENT)
     public static class Opener {
         @SubscribeEvent
         public static void onKey(InputEvent.Key event) {
-            if (event.getAction() != GLFW.GLFW_PRESS || event.getKey() != GLFW.GLFW_KEY_F10) return;
+            if (event.getAction() != GLFW.GLFW_PRESS) return;
             Minecraft mc = Minecraft.getInstance();
-            if (mc.screen != null) return;
-            mc.setScreen(new DemoWindowScreen());
+            if (mc.screen != null || mc.player == null) return;
+            if (event.getKey() == GLFW.GLFW_KEY_F10) mc.setScreen(new DemoWindowScreen());
+            else if (event.getKey() == GLFW.GLFW_KEY_F9) mc.setScreen(new DemoContainerScreen(mc.player.inventoryMenu, mc.player.getInventory(), Component.literal("inventory")));
+        }
+    }
+
+    /** The other half of the contract: this screen owns the menu and hands it to a window. */
+    public static class DemoContainerScreen extends ContainerWindowScreen<InventoryMenu> {
+        public DemoContainerScreen(InventoryMenu menu, Inventory inventory, Component title) {
+            super(menu, inventory, title);
+        }
+
+        @Override
+        protected void populate() {
+            windows.open(new DemoContainerWindow(menu, 176, 166));
+        }
+    }
+
+    static class DemoContainerWindow extends ContainerWindow<InventoryMenu> {
+        DemoContainerWindow(InventoryMenu menu, int width, int height) {
+            super(menu, width, height);
+            anims().add(Anims.popIn(500, Easing.EASE_IN_OUT_QUAD));
+        }
+
+        @Override
+        protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+            graphics.blit(AbstractContainerScreen.INVENTORY_LOCATION, 0, 0, 0, 0, getWidth(), getHeight());
         }
     }
 
@@ -125,7 +147,7 @@ public class DemoWindowScreen extends AbstractWindowScreen {
                             () -> gaugeRatio, 0xFFFFFFFF, () -> List.of(Component.literal(String.valueOf(gaugeRatio)))));
             if (spawnsChild)
                 elements.add(new TextureButtonElement(childButtonLeft(), childButtonTop(), () -> Component.literal("open child"),
-                        () -> manager.open(new DemoPanel(manager, "child", this, 0, 0, 150, 76, false))));
+                        () -> manager.open(new DemoPanel(manager, "child", this, 0, 0, 150, 76, true))));
         }
 
         @Override
@@ -347,22 +369,5 @@ public class DemoWindowScreen extends AbstractWindowScreen {
         /** The position is derived from the parent, there is nothing of its own to store. */
         @Override
         public void setPosition(int x, int y) {}
-    }
-
-    static class InventoryWindow extends AbstractContainerWindow<InventoryMenu> {
-        InventoryWindow(InventoryMenu menu, Inventory playerInventory, Component title, int imageWidth, int imageHeight) {
-            super(menu, playerInventory, title, imageWidth, imageHeight);
-            anims().add(Anims.popIn(500, Easing.EASE_IN_OUT_QUAD));
-        }
-
-        @Override
-        protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-            graphics.blit(AbstractContainerScreen.INVENTORY_LOCATION, leftPos(), topPos(), 0, 0, imageWidth(), imageHeight());
-        }
-
-        @Override
-        protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-
-        }
     }
 }

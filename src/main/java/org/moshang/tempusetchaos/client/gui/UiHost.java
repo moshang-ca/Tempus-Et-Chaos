@@ -125,6 +125,7 @@ public class UiHost<T extends IUiNode> {
                 onNodeRemoved(node);
             }
         }
+        checkEmpty();
     }
 
     public UiHost<T> add(T node) {
@@ -158,6 +159,11 @@ public class UiHost<T extends IUiNode> {
 
     public boolean hasNodes() {
         return !nodes.isEmpty();
+    }
+
+    /** Whether every node is gone, the ones still playing an exit animation included. */
+    public boolean isEmpty() {
+        return nodes.isEmpty() && closing.isEmpty();
     }
 
     public void closeTop() {
@@ -225,7 +231,6 @@ public class UiHost<T extends IUiNode> {
         enter();
         try {
             for (T node : nodes) {
-                // a closing node still renders, it just no longer takes input
                 if (!isRenderable(node)) continue;
 
                 AnimProps props = node.getRenderProps();
@@ -305,7 +310,8 @@ public class UiHost<T extends IUiNode> {
         try {
             T node = topmostAt(mouseX, mouseY);
             if (node == null) {
-                // clicks outside every node still belong to the focused one, that is how vanilla reports "clicked outside the gui"
+                // clicks outside every node still belong to the focused one,
+                // that is how vanilla reports "clicked outside the gui"
                 node = getFocused();
                 if (node == null || !handlesOutsideClick(node)) return false;
                 AnimProps.Local local = localPoint(node, mouseX, mouseY);
@@ -434,7 +440,6 @@ public class UiHost<T extends IUiNode> {
         return closing.contains(node);
     }
 
-    /** Host space point -> the node's own space. */
     protected AnimProps.Local localPoint(T node, double mouseX, double mouseY) {
         AnimProps props = node.getRenderProps();
         if (props == null || props.isIdentity()) {
@@ -443,14 +448,12 @@ public class UiHost<T extends IUiNode> {
         return props.toLocal(mouseX, mouseY, node.getX(), node.getY(), node.getWidth(), node.getHeight());
     }
 
-    /** The node's own space point -> this host's space, the exact inverse of {@link #localPoint}. */
     public AnimProps.Local toHost(T node, double localX, double localY) {
         AnimProps props = node.getRenderProps();
         if (props == null || props.isIdentity()) return new AnimProps.Local(localX + node.getX(), localY + node.getY());
         return props.toHost(localX, localY, node.getX(), node.getY(), node.getWidth(), node.getHeight());
     }
 
-    /** Scissor the node, in host space. Returns whether a scissor was enabled. */
     protected boolean applyClip(GuiGraphics graphics, T node, @Nullable AnimProps props) {
         return false;
     }
@@ -458,6 +461,8 @@ public class UiHost<T extends IUiNode> {
     protected void onNodeAdded(T node) {}
 
     protected void onNodeRemoved(T node) {}
+
+    protected void onAllNodesGone() {}
 
     protected void onNodePicked(T node) {
         bringToFront(node);
@@ -471,13 +476,11 @@ public class UiHost<T extends IUiNode> {
         return false;
     }
 
-    /** Who takes the focus after {@code closing} is gone. */
     @Nullable
     protected T focusFallback(T closing) {
         return getTop();
     }
 
-    /** Which nodes a close should take down with it. */
     protected List<T> closeTargets(T node) {
         return List.of(node);
     }
@@ -585,6 +588,7 @@ public class UiHost<T extends IUiNode> {
     }
 
     private void flush() {
+        boolean closed = false;
         while (!pendingAdd.isEmpty() || !pendingRemove.isEmpty() || !pendingClose.isEmpty()) {
             List<T> adds = new ArrayList<>(pendingAdd);
             List<T> removes = new ArrayList<>(pendingRemove);
@@ -594,7 +598,15 @@ public class UiHost<T extends IUiNode> {
             pendingClose.clear();
             for (T node : adds) doAdd(node);
             for (T node : removes) doRemove(node);
-            for (T node : closes) doClose(node);
+            for (T node : closes) {
+                doClose(node);
+                closed = true;
+            }
         }
+        if (closed) checkEmpty();
+    }
+
+    private void checkEmpty() {
+        if (nodes.isEmpty() && closing.isEmpty()) onAllNodesGone();
     }
 }

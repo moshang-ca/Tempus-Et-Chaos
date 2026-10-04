@@ -54,12 +54,14 @@ public abstract class BaseChrononNodeBlockEntity extends BlockEntity implements 
         return getBlockPos();
     }
 
-    public long getChrononStored() {
+    @Override
+    public long getNetChrononStored() {
         ChrononNetwork network = network();
         return network == null ? 0 : network.getChrononStored();
     }
 
-    public long getChrononCapacity() {
+    @Override
+    public long getNetChrononCapacity() {
         ChrononNetwork network = network();
         return network == null ? 0 : network.getCapacity();
     }

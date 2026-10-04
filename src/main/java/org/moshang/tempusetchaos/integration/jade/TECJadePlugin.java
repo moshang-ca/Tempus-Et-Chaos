@@ -1,9 +1,7 @@
 package org.moshang.tempusetchaos.integration.jade;
 
-import org.moshang.tempusetchaos.block.BlockEntropyNode;
-import org.moshang.tempusetchaos.block.BlockEntropyPipe;
-import org.moshang.tempusetchaos.block.BlockEntropyReactor;
-import org.moshang.tempusetchaos.block.BlockEntropyVessel;
+import org.moshang.tempusetchaos.api.BaseChrononMachineryBlock;
+import org.moshang.tempusetchaos.block.*;
 import snownee.jade.api.IWailaClientRegistration;
 import snownee.jade.api.IWailaCommonRegistration;
 import snownee.jade.api.IWailaPlugin;
@@ -14,18 +12,19 @@ public class TECJadePlugin implements IWailaPlugin {
 
     @Override
     public void register(IWailaCommonRegistration registration) {
-        registration.registerBlockDataProvider(TECServerDataProvider.INSTANCE, BlockEntropyNode.class);
-        registration.registerBlockDataProvider(TECServerDataProvider.INSTANCE, BlockEntropyReactor.class);
-        registration.registerBlockDataProvider(TECServerDataProvider.INSTANCE, BlockEntropyPipe.class);
-        registration.registerBlockDataProvider(TECServerDataProvider.INSTANCE, BlockEntropyVessel.class);
+        registration.registerFluidStorage(TECFluidStorageProvider.INSTANCE, BlockEntropyNode.class);
+        registration.registerFluidStorage(TECFluidStorageProvider.INSTANCE, BlockEntropyReactor.class);
+        registration.registerFluidStorage(TECFluidStorageProvider.INSTANCE, BlockEntropyPipe.class);
+        registration.registerFluidStorage(TECFluidStorageProvider.INSTANCE, BlockEntropyVessel.class);
+        registration.registerFluidStorage(TECFluidStorageProvider.INSTANCE, BlockEntropyForge.class);
+
+        registration.registerBlockDataProvider(ChrononNetDataProvider.INSTANCE, BaseChrononMachineryBlock.class);
     }
 
     @Override
     public void registerClient(IWailaClientRegistration registration) {
-        registration.registerBlockComponent(TECComponentProvider.INSTANCE, BlockEntropyNode.class);
-        registration.registerBlockComponent(TECComponentProvider.INSTANCE, BlockEntropyReactor.class);
-        registration.registerBlockComponent(TECComponentProvider.INSTANCE, BlockEntropyPipe.class);
-        registration.registerBlockComponent(TECComponentProvider.INSTANCE, BlockEntropyVessel.class);
+        registration.registerFluidStorageClient(TECFluidStorageProvider.INSTANCE);
 
+        registration.registerBlockComponent(ChrononComponentProvider.INSTANCE, BaseChrononMachineryBlock.class);
     }
 }

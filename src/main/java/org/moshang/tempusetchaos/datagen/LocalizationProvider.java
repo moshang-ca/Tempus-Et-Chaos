@@ -34,7 +34,8 @@ public class LocalizationProvider extends LanguageProvider {
         this.add(TECItems.WRENCH.get(), toDisplayName(TECItems.WRENCH));
 
         this.add("fluid.tempusetchaos.gas_entropy", "Gas Entropy");
-        this.add("jade.tempusetchaos.fluid_amount", "%s: %s / %s");
+        this.add("jade.tempusetchaos.chronon", "%s / %s ");
+        this.add("jade.tempusetchaos.chronon.short", " %s ");
     }
 
     protected static <R, T extends R> String toDisplayName(DeferredHolder<R, T> registerHolder) {

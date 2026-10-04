@@ -1,5 +1,6 @@
 package org.moshang.tempusetchaos.client.gui;
 
+import com.mojang.logging.LogUtils;
 import lombok.Getter;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -9,6 +10,7 @@ import org.jetbrains.annotations.Nullable;
 import org.moshang.tempusetchaos.client.gui.anim.AnimProps;
 import org.moshang.tempusetchaos.client.gui.element.GhostSlot;
 import org.moshang.tempusetchaos.client.gui.element.UiElement;
+import org.slf4j.Logger;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.ArrayList;
@@ -17,8 +19,13 @@ import java.util.List;
 @ParametersAreNonnullByDefault
 @SuppressWarnings("unused")
 public class WindowManager extends UiHost<IUiWindow> {
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     @Getter
     private final Screen host;
+
+    private boolean populated;
+    private boolean closingScreen;
 
     public WindowManager(Screen host) {
         this.host = host;
@@ -26,6 +33,27 @@ public class WindowManager extends UiHost<IUiWindow> {
 
     public void open(IUiWindow window) {
         add(window);
+    }
+
+    /** Called before {@code populate}, which empties the list, so the gap is not mistaken for the player closing up. */
+    public void beginPopulate() {
+        populated = false;
+    }
+
+    public void endPopulate() {
+        if (isEmpty()) LOGGER.warn("{} opened no window, the screen stays empty", host.getClass().getName());
+        populated = true;
+    }
+
+    @Override
+    protected void onAllNodesGone() {
+        if (!populated || closingScreen || host.isPauseScreen()) return;
+        closingScreen = true;
+        try {
+            host.onClose();
+        } finally {
+            closingScreen = false;
+        }
     }
 
     public boolean hasWindow() {
@@ -71,48 +99,6 @@ public class WindowManager extends UiHost<IUiWindow> {
             }
         }
         return targets;
-    }
-
-    /** An element of this screen that takes ghost ingredients, its area mapped out on demand. */
-    public final class GhostTarget {
-        private final AbstractUiWindow window;
-        private final UiElement element;
-        private final GhostSlot slot;
-
-        private GhostTarget(AbstractUiWindow window, UiElement element, GhostSlot slot) {
-            this.window = window;
-            this.element = element;
-            this.slot = slot;
-        }
-
-        public GhostSlot slot() {
-            return slot;
-        }
-
-        /**
-         * The element's box in screen coordinates. Recomputed rather than stored because a caller may hold on
-         * to the target while the window moves, and because the element's own animations scale or turn it.
-         */
-        public Rect2i area() {
-            UiHost<UiElement> elements = window.elements();
-            double left = Double.MAX_VALUE;
-            double top = Double.MAX_VALUE;
-            double right = -Double.MAX_VALUE;
-            double bottom = -Double.MAX_VALUE;
-            for (int corner = 0; corner < 4; corner++) {
-                AnimProps.Local local = elements.toHost(element,
-                        (corner & 1) == 0 ? 0 : element.getWidth(),
-                        (corner & 2) == 0 ? 0 : element.getHeight());
-                AnimProps.Local screen = toHost(window, local.x(), local.y());
-                left = Math.min(left, screen.x());
-                top = Math.min(top, screen.y());
-                right = Math.max(right, screen.x());
-                bottom = Math.max(bottom, screen.y());
-            }
-            int x = (int) Math.floor(left);
-            int y = (int) Math.floor(top);
-            return new Rect2i(x, y, (int) Math.ceil(right) - x, (int) Math.ceil(bottom) - y);
-        }
     }
 
     @Override
@@ -209,5 +195,46 @@ public class WindowManager extends UiHost<IUiWindow> {
         int x = Math.clamp(window.getX(), 0, Math.max(0, hostWidth() - window.getWidth()));
         int y = Math.clamp(window.getY(), 0, Math.max(0, hostHeight() - window.getHeight()));
         if (x != window.getX() || y != window.getY()) window.setPosition(x, y);
+    }
+
+    public final class GhostTarget {
+        private final AbstractUiWindow window;
+        private final UiElement element;
+        private final GhostSlot slot;
+
+        private GhostTarget(AbstractUiWindow window, UiElement element, GhostSlot slot) {
+            this.window = window;
+            this.element = element;
+            this.slot = slot;
+        }
+
+        public GhostSlot slot() {
+            return slot;
+        }
+
+        /**
+         * The element's box in screen coordinates. Recomputed rather than stored because a caller may hold on
+         * to the target while the window moves, and because the element's own animations scale or turn it.
+         */
+        public Rect2i area() {
+            UiHost<UiElement> elements = window.elements();
+            double left = Double.MAX_VALUE;
+            double top = Double.MAX_VALUE;
+            double right = -Double.MAX_VALUE;
+            double bottom = -Double.MAX_VALUE;
+            for (int corner = 0; corner < 4; corner++) {
+                AnimProps.Local local = elements.toHost(element,
+                        (corner & 1) == 0 ? 0 : element.getWidth(),
+                        (corner & 2) == 0 ? 0 : element.getHeight());
+                AnimProps.Local screen = toHost(window, local.x(), local.y());
+                left = Math.min(left, screen.x());
+                top = Math.min(top, screen.y());
+                right = Math.max(right, screen.x());
+                bottom = Math.max(bottom, screen.y());
+            }
+            int x = (int) Math.floor(left);
+            int y = (int) Math.floor(top);
+            return new Rect2i(x, y, (int) Math.ceil(right) - x, (int) Math.ceil(bottom) - y);
+        }
     }
 }
