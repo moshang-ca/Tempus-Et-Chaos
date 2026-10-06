@@ -6,10 +6,12 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
 import org.moshang.tempusetchaos.block.BlockChrononNetCable;
 import org.moshang.tempusetchaos.block.BlockEntropyPipe;
+import org.moshang.tempusetchaos.config.Config;
 import org.moshang.tempusetchaos.datagen.LocalizationProvider;
 import org.moshang.tempusetchaos.datagen.TECBlockStateProvider;
 import org.moshang.tempusetchaos.registry.*;
@@ -21,6 +23,8 @@ public class TempusEtChaos {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public TempusEtChaos(IEventBus modEventBus, ModContainer modContainer) {
+        modContainer.registerConfig(ModConfig.Type.CLIENT, Config.SPEC);
+
         modEventBus.addListener(this::onModelLoaderRegister);
         modEventBus.addListener(this::onLanguageGather);
 

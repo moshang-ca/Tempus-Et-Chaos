@@ -2,6 +2,7 @@ package org.moshang.tempusetchaos.client.gui;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.datafixers.util.Pair;
+import lombok.Getter;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -44,15 +45,15 @@ public abstract class ContainerWindow<T extends AbstractContainerMenu> extends A
     protected final T menu;
     protected final Minecraft mc = Minecraft.getInstance();
 
+    @Getter
     private int x;
+    @Getter
     private int y;
+    @Getter
     private int width;
+    @Getter
     private int height;
     private boolean centered;
-
-    private boolean dragging;
-    private double grabX;
-    private double grabY;
 
     @Nullable
     protected Slot hoveredSlot;
@@ -104,26 +105,6 @@ public abstract class ContainerWindow<T extends AbstractContainerMenu> extends A
             centered = true;
         }
         super.init(mc, screenWidth, screenHeight);
-    }
-
-    @Override
-    public int getX() {
-        return x;
-    }
-
-    @Override
-    public int getY() {
-        return y;
-    }
-
-    @Override
-    public int getWidth() {
-        return width;
-    }
-
-    @Override
-    public int getHeight() {
-        return height;
     }
 
     @Override
@@ -204,15 +185,12 @@ public abstract class ContainerWindow<T extends AbstractContainerMenu> extends A
     @Override
     protected boolean onMouseClicked(double mouseX, double mouseY, int button) {
         Slot slot = findSlot(mouseX, mouseY);
-        // an empty hand on the frame is a drag handle, so grabbing the window never disturbs a stack
-        if (button == 0 && slot == null && !hasClickedOutside(mouseX, mouseY)) {
-            dragging = true;
-            grabX = mouseX;
-            grabY = mouseY;
-            return true;
-        }
+        // an empty hand on the frame is a drag handle: the press is claimed here so the host starts the framework
+        // drag, the move itself is the host's job. The flag gates whether the host may drag at all.
+        if (button == 0 && slot == null && !hasClickedOutside(mouseX, mouseY)) return canDrag;
 
         InputConstants.Key mouseKey = InputConstants.Type.MOUSE.getOrCreate(button);
+        assert mc.player != null;
         boolean pick = mc.options.keyPickItem.isActiveAndMatches(mouseKey) && mc.player.hasInfiniteMaterials();
         long now = Util.getMillis();
         doubleClick = lastClickSlot == slot && now - lastClickTime < 250L && lastClickButton == button;
@@ -242,7 +220,7 @@ public abstract class ContainerWindow<T extends AbstractContainerMenu> extends A
                             boolean quickMove = slotId != -999 && isQuickMoveKeyDown();
                             ClickType type = ClickType.PICKUP;
                             if (quickMove) {
-                                lastQuickMoved = slot != null && slot.hasItem() ? slot.getItem().copy() : ItemStack.EMPTY;
+                                lastQuickMoved = slot.hasItem() ? slot.getItem().copy() : ItemStack.EMPTY;
                                 type = ClickType.QUICK_MOVE;
                             } else if (slotId == -999) {
                                 type = ClickType.THROW;
@@ -271,11 +249,6 @@ public abstract class ContainerWindow<T extends AbstractContainerMenu> extends A
 
     @Override
     protected boolean onMouseReleased(double mouseX, double mouseY, int button) {
-        if (dragging && button == 0) {
-            dragging = false;
-            return true;
-        }
-
         Slot slot = findSlot(mouseX, mouseY);
         boolean outside = slot == null && hasClickedOutside(mouseX, mouseY);
         InputConstants.Key mouseKey = InputConstants.Type.MOUSE.getOrCreate(button);
@@ -285,6 +258,7 @@ public abstract class ContainerWindow<T extends AbstractContainerMenu> extends A
             if (Screen.hasShiftDown()) {
                 if (!lastQuickMoved.isEmpty()) {
                     for (Slot other : menu.slots) {
+                        assert mc.player != null;
                         if (other.mayPickup(mc.player) && other.hasItem() && other.isSameInventory(slot)
                                 && AbstractContainerMenu.canItemQuickReplace(other, lastQuickMoved, true)) {
                             slotClicked(other, other.index, button, ClickType.QUICK_MOVE);
@@ -353,11 +327,6 @@ public abstract class ContainerWindow<T extends AbstractContainerMenu> extends A
 
     @Override
     protected boolean onMouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        if (dragging) {
-            setPosition((int) Math.round(x + (mouseX - grabX)), (int) Math.round(y + (mouseY - grabY)));
-            return true;
-        }
-
         Slot slot = findSlot(mouseX, mouseY);
         ItemStack carried = menu.getCarried();
 
@@ -587,9 +556,13 @@ public abstract class ContainerWindow<T extends AbstractContainerMenu> extends A
         return InputConstants.isKeyDown(window, 340) || InputConstants.isKeyDown(window, 344);
     }
 
+    /**
+     * Releasing the container belongs to the close, not to being dropped from the host: a screen that lays itself
+     * out again takes its windows out and puts them back, and the menu has to survive that.
+     */
     @Override
-    public void onRemoved() {
-        super.onRemoved();
+    public void onClose() {
+        super.onClose();
         if (mc.player != null && mc.getConnection() != null && mc.player.containerMenu == menu) {
             mc.player.closeContainer();
         }

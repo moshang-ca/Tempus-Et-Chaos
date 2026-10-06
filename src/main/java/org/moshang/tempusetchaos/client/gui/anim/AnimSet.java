@@ -1,5 +1,8 @@
 package org.moshang.tempusetchaos.client.gui.anim;
 
+import lombok.Getter;
+import lombok.experimental.Accessors;
+
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -15,20 +18,20 @@ import java.util.Set;
  */
 @SuppressWarnings("unused")
 public final class AnimSet {
+    @Accessors(fluent = true) @Getter
     private final AnimProps props = new AnimProps();
+    @Accessors(fluent = true) @Getter
     private final List<Animation> animations = new ArrayList<>();
     private final Set<Animation> closing = new LinkedHashSet<>();
 
-    public AnimProps props() {
-        return props;
-    }
-
-    public List<Animation> animations() {
-        return animations;
-    }
+    /** Pushed in by the host before every frame. While false the set jumps to the end state instead of moving. */
+    private boolean enabled = true;
+    /** Whether the end state was already written for this disabled run, so it is written once and not per frame. */
+    private boolean settled;
 
     public AnimSet add(Animation animation) {
         animations.add(animation);
+        settled = false;
         return this;
     }
 
@@ -36,13 +39,38 @@ public final class AnimSet {
         return animations.remove(animation);
     }
 
+    public void setEnabled(boolean enabled) {
+        if (this.enabled == enabled) return;
+        this.enabled = enabled;
+        if (enabled) settled = false;
+    }
+
     public void tick() {
+        if (!enabled) {
+            settle();
+            return;
+        }
         for (Animation animation : animations) {
             animation.tick(props);
         }
     }
 
+    /**
+     * Writes the end state once and leaves it there. The animations are not ticked any more, so whatever they would
+     * have written last is what the node keeps: skipping them outright would strand the props at their start value,
+     * which is invisible for a fade in.
+     */
+    public void settle() {
+        if (settled) return;
+        settled = true;
+        for (Animation animation : animations) {
+            animation.finish(props);
+        }
+    }
+
     public void fire(AnimEvent event, boolean active) {
+        // an event starts new animations, and those still have to reach their end state while disabled
+        if (!enabled) settled = false;
         for (Animation animation : animations) {
             animation.onEvent(event, active);
         }

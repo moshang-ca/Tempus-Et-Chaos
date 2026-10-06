@@ -8,6 +8,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.client.event.ContainerScreenEvent;
+import net.neoforged.neoforge.common.NeoForge;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -46,16 +48,12 @@ public abstract class ContainerWindowScreen<T extends AbstractContainerMenu> ext
 
     /**
      * Opens the windows of this screen. It runs on every {@link #init()}, which the client calls after a construction
-     * and again whenever this screen comes back to the front or is resized, so it has to be written to build the
-     * windows from scratch rather than to add to whatever is already there. The list is emptied first, the same way
-     * vanilla drops its widgets before rebuilding them.
+     * and again whenever this screen comes back to the front or is resized.
      */
     protected abstract void populate();
 
     /**
-     * The windows are rebuilt here instead of being built once in the constructor, which is what lets another mod
-     * step in front of this screen: the client calls {@code removed} and {@code init} again when a screen is swapped
-     * away and back, so a screen that only lost the front rebuilds itself the same way vanilla widgets do.
+     * The windows are rebuilt here instead of being built once in the constructor.
      */
     @Override
     protected void init() {
@@ -63,11 +61,7 @@ public abstract class ContainerWindowScreen<T extends AbstractContainerMenu> ext
         // the screen has no art of its own, every slot is drawn in the space of the window that owns it
         leftPos = 0;
         topPos = 0;
-        windows.init(width, height);
-        windows.disposeAll();
-        windows.beginPopulate();
-        populate();
-        windows.endPopulate();
+        windows.rebuild(width, height, this::populate);
     }
 
     @Override
@@ -97,11 +91,22 @@ public abstract class ContainerWindowScreen<T extends AbstractContainerMenu> ext
      * slot loop finds nothing because {@link #isHovering(int, int, int, int, double, double)} answers {@code false}.
      * The windows are painted over it.
      */
+    @SuppressWarnings("UnstableApiUsage")
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         windows.updateAnimations();
-        super.render(graphics, mouseX, mouseY, partialTick);
+        renderBackground(graphics, mouseX, mouseY, partialTick);
+        // As the vanilla render implementation will render the inventory by default,
+        // we do not reuse the vanilla implementation.
+        // So we should post the render event manually.
+        NeoForge.EVENT_BUS.post(new ContainerScreenEvent.Render.Background(this, graphics,  mouseX, mouseY));
         windows.render(graphics, mouseX, mouseY, partialTick);
+        NeoForge.EVENT_BUS.post(new ContainerScreenEvent.Render.Foreground(this, graphics, mouseX, mouseY));
+    }
+
+    @Override
+    public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.renderBackground(guiGraphics, mouseX, mouseY, partialTick);
     }
 
     /**

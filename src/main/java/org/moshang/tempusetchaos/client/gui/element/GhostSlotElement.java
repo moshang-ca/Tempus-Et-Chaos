@@ -17,7 +17,6 @@ import java.util.function.Supplier;
  */
 @ParametersAreNonnullByDefault
 public class GhostSlotElement extends SlotElement implements GhostSlot {
-
     private final Predicate<ItemStack> filter;
     private final Consumer<ItemStack> setter;
 

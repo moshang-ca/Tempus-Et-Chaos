@@ -51,6 +51,12 @@ public final class MatchSet {
         return true;
     }
 
+    /**<b>This should only be used in the persist system</b>*/
+    public void clear() {
+        entries.clear();
+        index.clear();
+    }
+
     @SuppressWarnings("unchecked")
     public boolean matchBlock(ResourceLocation id, BlockState state) {
         Index idx = index.get(Entry.Kind.BLOCK);

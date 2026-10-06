@@ -52,9 +52,10 @@ public final class AnimProps {
     }
 
     public void apply(PoseStack pose, int x, int y, int width, int height) {
+        pose.translate(x + offsetX, y + offsetY, 0f);
+        if (isIdentity()) return;
         float px = width * pivotX;
         float py = height * pivotY;
-        pose.translate(x + offsetX, y + offsetY, 0f);
         pose.translate(px, py, 0f);
         if (rotation != 0f) pose.mulPose(Axis.ZP.rotation(rotation));
         if (scaleX != 1f || scaleY != 1f) pose.scale(scaleX, scaleY, 1f);
@@ -63,6 +64,7 @@ public final class AnimProps {
 
     /** Host space point -> the node's own space, origin at its top left. */
     public Local toLocal(double screenX, double screenY, int x, int y, int width, int height) {
+        if (isIdentity()) return new Local(screenX - x, screenY - y);
         float px = width * pivotX;
         float py = height * pivotY;
         double sx = Math.abs(scaleX) < Anim.EPSILON ? Anim.EPSILON : scaleX;
@@ -132,6 +134,13 @@ public final class AnimProps {
             p.scaleY = v;
         };
         Writer ROTATION = (p, v) -> p.rotation = v;
+
+        default Writer and(Writer other) {
+            return (p, v) -> {
+                this.write(p, v);
+                other.write(p, v);
+            };
+        }
     }
 
     public record Local(double x, double y) { }

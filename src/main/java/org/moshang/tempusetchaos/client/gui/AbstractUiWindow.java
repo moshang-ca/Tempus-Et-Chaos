@@ -1,5 +1,8 @@
 package org.moshang.tempusetchaos.client.gui;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -14,21 +17,20 @@ import java.util.List;
 /**
  * A window that hosts elements. Elements live in the window's own space, the host translates the pose for them.
  */
+@Accessors(fluent = true, chain = true)
 @ParametersAreNonnullByDefault
 @SuppressWarnings("unused")
 public abstract class AbstractUiWindow implements IUiWindow, Animated {
+    /** The window's own element space, so whoever holds the window can map an element's box out to the screen. */
+    @Getter
     protected final UiHost<UiElement> elements = new UiHost<>();
+    @Getter
     private final AnimSet anims = new AnimSet();
 
-    @Override
-    public AnimSet anims() {
-        return anims;
-    }
-
-    /** The window's own element space, so whoever holds the window can map an element's box out to the screen. */
-    public UiHost<UiElement> elements() {
-        return elements;
-    }
+    @Accessors(fluent = false) @Getter
+    protected IUiWindow parent;
+    @Setter @Getter
+    protected boolean canDrag = false;
 
     @Override
     public void init(Minecraft mc, int screenWidth, int screenHeight) {
@@ -54,12 +56,12 @@ public abstract class AbstractUiWindow implements IUiWindow, Animated {
 
     @Override
     public void onClose() {
-        elements.clear();
+        elements.disposeAll();
     }
 
     @Override
     public void onRemoved() {
-        elements.clear();
+        elements.disposeAll();
     }
 
     @Override

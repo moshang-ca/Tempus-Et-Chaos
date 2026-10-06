@@ -42,11 +42,7 @@ public abstract class AbstractWindowScreen extends Screen implements WindowScree
     @Override
     protected void init() {
         super.init();
-        windows.init(width, height);
-        windows.disposeAll();
-        windows.beginPopulate();
-        populate();
-        windows.endPopulate();
+        windows.rebuild(width, height, this::populate);
     }
 
     @Override

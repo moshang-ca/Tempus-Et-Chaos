@@ -43,7 +43,7 @@ public class Track {
     }
 
     /**
-     * @param delayMs how long the track holds its first key first, measured from now.
+     * @param delayMs how long the track holds its first key, measured from now.
      * @param durationMs how long the move itself takes, after that delay.
      */
     public void play(long delayMs, long durationMs, boolean loop, boolean alternate) {
@@ -63,6 +63,11 @@ public class Track {
     }
 
     public void stop() { running = false; }
+
+    /** The value the track ends on, or its current one when it has no keys. */
+    public float endValue() {
+        return keys.isEmpty() ? current : keys.getLast().value();
+    }
 
     public void snap(float v) {
         this.current = v;

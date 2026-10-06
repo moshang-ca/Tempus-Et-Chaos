@@ -35,13 +35,24 @@ public class WindowManager extends UiHost<IUiWindow> {
         add(window);
     }
 
-    /** Called before {@code populate}, which empties the list, so the gap is not mistaken for the player closing up. */
-    public void beginPopulate() {
+    /**
+     * Lays this manager out for a screen again and lets it refill itself. The client calls this on every
+     * {@code Screen#init}, which happens on a construction, on a return to the front and on a resize, so it always
+     * starts from an empty list and never keeps a window across two layouts.
+     * <p>
+     * Only the first layout plays the entry animations. A relayout rebuilds the same windows the player is already
+     * looking at, so playing an opening move again would make the screen blink every time it comes back, for
+     * instance after a look at a jei recipe: those nodes are put straight into place instead.
+     */
+    public void rebuild(int hostWidth, int hostHeight, Runnable populate) {
+        boolean firstLayout = !populated;
+        init(hostWidth, hostHeight);
+        detachAllNodes();
         populated = false;
-    }
-
-    public void endPopulate() {
+        settling = !firstLayout;
+        populate.run();
         if (isEmpty()) LOGGER.warn("{} opened no window, the screen stays empty", host.getClass().getName());
+        settling = false;
         populated = true;
     }
 
@@ -54,14 +65,6 @@ public class WindowManager extends UiHost<IUiWindow> {
         } finally {
             closingScreen = false;
         }
-    }
-
-    public boolean hasWindow() {
-        return hasNodes();
-    }
-
-    public List<IUiWindow> getWindows() {
-        return getNodes();
     }
 
     /**

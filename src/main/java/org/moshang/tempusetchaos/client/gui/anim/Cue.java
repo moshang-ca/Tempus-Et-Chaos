@@ -21,6 +21,10 @@ public record Cue(long delayMs, long durationMs, Easing easing) {
         return new Cue(previous.endMs() + holdMs, durationMs, easing);
     }
 
+    public static Cue startingAt(Cue anchor, long offsetMs, long durationMs, Easing easing) {
+        return new Cue(anchor.delayMs + Math.max(0L, offsetMs), durationMs, easing);
+    }
+
     public long endMs() {
         return delayMs + durationMs;
     }

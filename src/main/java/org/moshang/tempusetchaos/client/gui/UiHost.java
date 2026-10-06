@@ -1,12 +1,17 @@
 package org.moshang.tempusetchaos.client.gui;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL11;
 import org.moshang.tempusetchaos.client.gui.anim.Anim;
 import org.moshang.tempusetchaos.client.gui.anim.AnimProps;
+import org.moshang.tempusetchaos.client.gui.anim.Animated;
+import org.moshang.tempusetchaos.config.Config;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.ArrayList;
@@ -20,6 +25,7 @@ import java.util.Set;
  * Every node is drawn at the origin of their own space, so the host translates the pose by the node position and
  * hands the node its own local coordinates.
  */
+@Accessors(fluent = true, chain = true)
 @ParametersAreNonnullByDefault
 @SuppressWarnings("unused")
 public class UiHost<T extends IUiNode> {
@@ -32,16 +38,28 @@ public class UiHost<T extends IUiNode> {
     /** Nodes whose exit animation is still playing: still drawn, no longer interactive, not removed yet. */
     private final Set<T> closing = new LinkedHashSet<>();
 
+    @Getter
     private int hostWidth;
+    @Getter
     private int hostHeight;
+    @Getter
     private boolean sized;
     private int dispatchDepth;
 
+    @Setter @Getter
+    protected boolean canAnimate = true;
+    /** Whether the host is settling, always be true when host rebuilding. */
+    protected boolean settling = false;
+
     @Nullable
     private T dragging;
+    /** Where the drag was grabbed, in the dragged node's own space. */
+    private double grabX;
+    private double grabY;
     @Nullable
     private T focused;
     @Nullable
+    @Accessors(fluent = false) @Getter
     private T hovered;
 
     public UiHost() {
@@ -73,18 +91,6 @@ public class UiHost<T extends IUiNode> {
 
     protected void onHostResized() {}
 
-    protected boolean sized() {
-        return sized;
-    }
-
-    protected int hostWidth() {
-        return hostWidth;
-    }
-
-    protected int hostHeight() {
-        return hostHeight;
-    }
-
     public void tick() {
         enter();
         try {
@@ -99,13 +105,19 @@ public class UiHost<T extends IUiNode> {
     public void updateAnimations() {
         enter();
         try {
+            boolean animate = animationsEnabled();
             for (T node : nodes) {
+                if (node instanceof Animated animated) animated.anims().setEnabled(animate);
                 node.updateAnimation();
             }
             finishClosings();
         } finally {
             exit();
         }
+    }
+
+    protected boolean animationsEnabled() {
+        return canAnimate && !Config.CONFIG.disableAnimations.get();
     }
 
     /** Drop every node whose exit animation just ended. */
@@ -157,36 +169,27 @@ public class UiHost<T extends IUiNode> {
         return Collections.unmodifiableList(nodes);
     }
 
-    public boolean hasNodes() {
-        return !nodes.isEmpty();
-    }
-
     /** Whether every node is gone, the ones still playing an exit animation included. */
     public boolean isEmpty() {
         return nodes.isEmpty() && closing.isEmpty();
     }
 
-    public void closeTop() {
-        T top = getTop();
-        if (top != null) close(top);
+    /**
+     * Takes every node out without closing it: the node is told it lost the host, nothing is torn down.
+     */
+    public void detachAllNodes() {
+        List<T> doomed = detachAll();
+        for (int i = doomed.size() - 1; i >= 0; i--) {
+            doomed.get(i).onDetached();
+        }
     }
 
-    public void closeAll() {
+    /** Drops every node for good: this is the way out, and each node is told it is closing. */
+    public void disposeAll() {
         List<T> doomed = detachAll();
         for (int i = doomed.size() - 1; i >= 0; i--) {
             doomed.get(i).onClose();
         }
-    }
-
-    public void clear() {
-        List<T> doomed = detachAll();
-        for (int i = doomed.size() - 1; i >= 0; i--) {
-            doomed.get(i).onRemoved();
-        }
-    }
-
-    public void disposeAll() {
-        clear();
     }
 
     @Nullable
@@ -214,11 +217,6 @@ public class UiHost<T extends IUiNode> {
         focused = node;
         if (previous != null) previous.onFocusChanged(false);
         if (node != null) node.onFocusChanged(true);
-    }
-
-    @Nullable
-    public T getHovered() {
-        return hovered;
     }
 
     public void bringToFront(T node) {
@@ -321,7 +319,12 @@ public class UiHost<T extends IUiNode> {
             AnimProps.Local local = localPoint(node, mouseX, mouseY);
             if (!node.isMouseClicked(local.x(), local.y(), button)) return false;
             onNodePicked(node);
-            if (button == 0) dragging = node;
+            if (button == 0) {
+                dragging = node;
+                // the grab is remembered in the node's own space, so a moving node keeps following the cursor
+                grabX = local.x();
+                grabY = local.y();
+            }
             return true;
         } finally {
             exit();
@@ -335,7 +338,16 @@ public class UiHost<T extends IUiNode> {
             if (captured == null) captured = topmostAt(mouseX, mouseY);
             if (captured == null) return false;
             AnimProps.Local local = localPoint(captured, mouseX, mouseY);
-            return captured.isMouseDragged(local.x(), local.y(), button, dragX, dragY);
+            // the node gets the first say; a node that asked to be draggable and does not handle the drag itself
+            // is moved here, which is the only place a drag is ever applied
+            if (captured.isMouseDragged(local.x(), local.y(), button, dragX, dragY)) return true;
+            if (captured != dragging || !captured.canDrag()) return false;
+            // the grab was taken in the node's own space, so the same space gives back how far it moved
+            double movedX = local.x() - grabX;
+            double movedY = local.y() - grabY;
+            captured.setPosition((int) Math.round(captured.getX() + movedX),
+                    (int) Math.round(captured.getY() + movedY));
+            return true;
         } finally {
             exit();
         }
@@ -468,6 +480,7 @@ public class UiHost<T extends IUiNode> {
         bringToFront(node);
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     protected boolean handlesOutsideClick(T node) {
         return false;
     }
@@ -488,6 +501,9 @@ public class UiHost<T extends IUiNode> {
     private void doAdd(T node) {
         nodes.add(node);
         node.onAdded();
+        // a rebuilt host puts its nodes straight into place: the entry animations are triggered as usual, but the
+        // node skips to their end state instead of playing them again on every relayout
+        if (settling && node instanceof Animated animated) animated.anims().settle();
         if (sized) {
             node.init(mc, hostWidth, hostHeight);
         } else {

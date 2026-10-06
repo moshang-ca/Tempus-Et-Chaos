@@ -17,7 +17,8 @@ public class AnimValue {
     private float from;
     private float to;
     private long startMs;
-    private long durationMs = 1;
+    private long delayMs;
+    private long durationMs = 1L;
     private Easing easing = Easing.EASE_OUT_QUAD;
     @Getter
     private boolean running;
@@ -31,17 +32,24 @@ public class AnimValue {
      */
     public void snap(float v) {
         value = from = to = v;
+        this.delayMs = 0L;
         this.running = false;
     }
 
-    public void to(float target, long durationMs, Easing easing) {
-        if (running && this.to == target && this.durationMs == durationMs && this.easing == easing) return;
+    public void to(float target, long delayMs, long durationMs, Easing easing) {
+        if (running && this.to == target && this.delayMs == delayMs
+                && this.durationMs == durationMs && this.easing == easing) return;
         this.from = value;
         this.to = target;
         this.durationMs = durationMs;
-        this.startMs = Anim.now();
+        this.delayMs = Math.max(0L, delayMs);
+        this.startMs = Anim.now() + this.delayMs;
         this.easing = easing;
         this.running = true;
+    }
+
+    public void to(float target, long durationMs, Easing easing) {
+        to(target, 0L, durationMs, easing);
     }
 
     public void to(float target, long durationMs) {
@@ -51,6 +59,7 @@ public class AnimValue {
     public void update() {
         if (!running) return;
         long elapsed = Anim.now() - startMs;
+        if (elapsed < 0) return;
         if (Anim.finished(elapsed, durationMs)) {
             value = to;
             running = false;

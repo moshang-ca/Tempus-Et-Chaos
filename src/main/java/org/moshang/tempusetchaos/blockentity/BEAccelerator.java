@@ -7,18 +7,28 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.moshang.tempusetchaos.api.BaseChrononNodeBlockEntity;
+import org.moshang.tempusetchaos.menu.MenuAccelerator;
 import org.moshang.tempusetchaos.util.MatchSet;
 import org.moshang.tempusetchaos.registry.TECBlockEntities;
 import org.slf4j.Logger;
@@ -30,7 +40,7 @@ import java.util.List;
 import java.util.Set;
 
 @ParametersAreNonnullByDefault
-public class BEAccelerator extends BaseChrononNodeBlockEntity {
+public class BEAccelerator extends BaseChrononNodeBlockEntity implements MenuProvider {
     private static final Set<MatchSet.Entry> DEFAULT_BLACKLIST = new HashSet<>();
     private static final int[] CONSUMPTION = new int[1025];
     private static final int BASE_CONSUMPTION = 5;     // 5 ch/tick
@@ -139,11 +149,11 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity {
     }
 
     public void addBlacklist(MatchSet.Entry entry) {
-        if (blacklist.add(entry)) setChanged();
+        if (blacklist.add(entry)) markUpdate();
     }
 
     public void removeBlacklist(MatchSet.Entry entry) {
-        if (blacklist.remove(entry)) setChanged();
+        if (blacklist.remove(entry)) markUpdate();
     }
 
     @Override
@@ -152,10 +162,24 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity {
     }
 
     @Override
+    public Packet<ClientGamePacketListener> getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
+    @NotNull
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        CompoundTag tag = super.getUpdateTag(registries);
+        saveAdditional(tag, registries);
+        return tag;
+    }
+
+    @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         this.accelerateMultiplier = Mth.clamp(tag.getInt("acc_multiplier"), MIN_MULTIPLIER, MAX_MULTIPLIER);
         this.consumed = consumptionOf(this.accelerateMultiplier);
+        this.blacklist.clear();
         MatchSet.CODEC.parse(NbtOps.INSTANCE, tag.getCompound("blacklist"))
                 .resultOrPartial(error -> LOGGER.warn("Failed to load blacklist: {}", error))
                 .ifPresent(loaded -> loaded.ordered().forEach(this.blacklist::add));
@@ -168,5 +192,16 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity {
         MatchSet.CODEC.encodeStart(NbtOps.INSTANCE, this.blacklist)
                 .resultOrPartial(error -> LOGGER.warn("Failed to save blacklist: {}", error))
                 .ifPresent(nbt -> tag.put("blacklist", nbt));
+    }
+
+    @Override
+    @NotNull
+    public Component getDisplayName() {
+        return Component.translatable("menu.tempusetchaos.accelerator");
+    }
+
+    @Override
+    public @Nullable AbstractContainerMenu createMenu(int containerId, Inventory playerInventory, Player player) {
+        return new MenuAccelerator(containerId, playerInventory, this);
     }
 }

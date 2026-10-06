@@ -17,6 +17,7 @@ import org.lwjgl.glfw.GLFW;
 import org.moshang.tempusetchaos.TempusEtChaos;
 import org.moshang.tempusetchaos.client.gui.anim.*;
 import org.moshang.tempusetchaos.client.gui.element.*;
+import org.moshang.tempusetchaos.client.gui.window.SimpleContainerWindow;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
@@ -57,27 +58,26 @@ public class DemoWindowScreen extends AbstractWindowScreen {
         }
     }
 
-    /** The other half of the contract: this screen owns the menu and hands it to a window. */
-    public static class DemoContainerScreen extends ContainerWindowScreen<InventoryMenu> {
+    static class DemoContainerScreen extends ContainerWindowScreen<InventoryMenu> {
         public DemoContainerScreen(InventoryMenu menu, Inventory inventory, Component title) {
             super(menu, inventory, title);
         }
 
         @Override
         protected void populate() {
-            windows.open(new DemoContainerWindow(menu, 176, 166));
+            windows.open(new DemoContainerWindow(menu));
         }
     }
 
-    static class DemoContainerWindow extends ContainerWindow<InventoryMenu> {
-        DemoContainerWindow(InventoryMenu menu, int width, int height) {
-            super(menu, width, height);
-            anims().add(Anims.popIn(500, Easing.EASE_IN_OUT_QUAD));
-        }
+    static class DemoContainerWindow extends SimpleContainerWindow<InventoryMenu> {
+        private static final Cue SPIN = new Cue(0, 150, Easing.EASE_IN_EXPO);
+        private static final Cue OPEN = Cue.startingAt(SPIN, 100, 200, Easing.EASE_IN_EXPO);
 
-        @Override
-        protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-            graphics.blit(AbstractContainerScreen.INVENTORY_LOCATION, 0, 0, 0, 0, getWidth(), getHeight());
+        public DemoContainerWindow(InventoryMenu menu) {
+            super(menu, 176, 166, AbstractContainerScreen.INVENTORY_LOCATION, 256, 256);
+            anims().add(Anims.slideIn(AnimProps.Writer.OFFSET_X, -1660, 200, Easing.EASE_IN_QUAD))
+                    .add(Anims.timeline(AnimEvent.ADDED, SPIN, SPIN.track(0, 1), AnimProps.Writer.SCALE_X))
+                    .add(Anims.timeline(AnimEvent.ADDED, OPEN, OPEN.track(.01f, 1), AnimProps.Writer.SCALE_Y));
         }
     }
 
@@ -95,9 +95,6 @@ public class DemoWindowScreen extends AbstractWindowScreen {
 
         private int x;
         private int y;
-        private boolean dragging;
-        private double grabX;
-        private double grabY;
 
         private int inputFieldRes = 0;
         private float gaugeRatio = 0;
@@ -113,6 +110,7 @@ public class DemoWindowScreen extends AbstractWindowScreen {
             this.width = width;
             this.height = height;
             this.spawnsChild = spawnsChild;
+            this.canDrag = true;
 
             Track wobble = new Track();
             wobble.key(0.0f, -6f, Easing.EASE_OUT_QUAD)
@@ -196,30 +194,13 @@ public class DemoWindowScreen extends AbstractWindowScreen {
             }
         }
 
+        /**
+         * The frame is a drag handle: the press is claimed here so the host starts the framework drag, but the move
+         * itself is left to the host. The flag is what decides whether the host may drag at all.
+         */
         @Override
         protected boolean onMouseClicked(double mouseX, double mouseY, int button) {
-            if (button != 0) return false;
-            if (mouseY < TITLE_HEIGHT) {
-                dragging = true;
-                grabX = mouseX;
-                grabY = mouseY;
-                return true;
-            }
-            return false;
-        }
-
-        @Override
-        public boolean isMouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-            if (!dragging) return super.isMouseDragged(mouseX, mouseY, button, dragX, dragY);
-            setPosition((int) Math.round(x + (mouseX - grabX)), (int) Math.round(y + (mouseY - grabY)));
-            return true;
-        }
-
-        @Override
-        public boolean isMouseReleased(double mouseX, double mouseY, int button) {
-            if (!dragging) return super.isMouseReleased(mouseX, mouseY, button);
-            dragging = false;
-            return true;
+            return button == 0 && mouseY < TITLE_HEIGHT && canDrag;
         }
 
 //        @Override
@@ -325,8 +306,6 @@ public class DemoWindowScreen extends AbstractWindowScreen {
      * the panel's tree. It takes no input at all, which is what lets it sit on top of the panel it decorates.
      */
     static class IconOverlay extends AbstractUiWindow {
-        private final IUiWindow parent;
-
         IconOverlay(IUiWindow parent, int panelWidth, int panelHeight) {
             this.parent = parent;
 
@@ -338,11 +317,6 @@ public class DemoWindowScreen extends AbstractWindowScreen {
             elements.add(new IconBlock(iconLeft, iconTop, 0, 0, centreX, centreY, 0, 0));
             elements.add(new IconBlock(iconLeft + inset, iconTop + inset, inset, inset, centreX, centreY,
                     panelWidth - ICON_BLOCK, panelHeight - ICON_BLOCK));
-        }
-
-        @Override
-        public IUiWindow getParent() {
-            return parent;
         }
 
         /** Decoration only: it never becomes the hovered or clicked node, so the panel underneath keeps working. */

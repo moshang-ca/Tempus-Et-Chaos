@@ -15,6 +15,6 @@ public class TextureElement extends UiElement{
 
     @Override
     public void render(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        graphics.blit(texture, 0, 0, 0, 0, getWidth(), getHeight());
+        graphics.blit(texture, 0, 0, getWidth(), getHeight(), 0f, 0f, getWidth(), getHeight(), getWidth(), getHeight());
     }
 }

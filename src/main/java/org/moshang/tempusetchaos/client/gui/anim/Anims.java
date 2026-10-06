@@ -2,26 +2,31 @@ package org.moshang.tempusetchaos.client.gui.anim;
 
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Factories for the animations that ship with the ui. Each call builds a fresh, self contained object,
- * so a recipe may be handed to as many nodes as wanted.
- */
+@SuppressWarnings("unused")
 public final class Anims {
     private Anims() {}
 
     /** Tween writing into the host consumed props. */
     public static Animation tween(AnimEvent event, AnimProps.Writer writer, float from, float to, long durationMs, Easing easing) {
-        return new Tween(new AnimValue(from), writer, event, from, to, durationMs, easing);
+        return new Tween(new AnimValue(from), writer, event, from, to, 0L, durationMs, easing);
     }
 
     /** Tween driving a node owned value that node reads itself. The value is left at its initial state. */
     public static Animation tween(AnimEvent event, AnimValue value, float from, float to, long durationMs, Easing easing) {
-        return new Tween(value, null, event, from, to, durationMs, easing);
+        return new Tween(value, null, event, from, to, 0L, durationMs, easing);
+    }
+
+    public static Animation tween(AnimEvent event, Cue cue, AnimProps.Writer writer, float from, float to) {
+        return new Tween(new AnimValue(from), writer, event, from, to, cue.delayMs(), cue.durationMs(), cue.easing());
+    }
+
+    public static Animation tween(AnimEvent event, Cue cue, AnimValue value, float from, float to) {
+        return new Tween(value, null, event, from, to, cue.delayMs(), cue.durationMs(), cue.easing());
     }
 
     /** Tween bound to no event: started with {@link Animation#play()}, rewound with {@link Animation#reset()}. */
     public static Animation manual(AnimProps.Writer writer, float from, float to, long durationMs, Easing easing) {
-        return new Tween(new AnimValue(from), writer, null, from, to, durationMs, easing);
+        return new Tween(new AnimValue(from), writer, null, from, to, durationMs, 0L, easing);
     }
 
     public static Animation timeline(AnimEvent event, Track track, long durationMs, boolean loop, boolean alternate, AnimProps.Writer writer) {
@@ -57,7 +62,7 @@ public final class Anims {
         return tween(AnimEvent.CLOSING, AnimProps.Writer.SCALE_XY, 1f, 0.9f, durationMs, easing);
     }
 
-    /** Light the node up while hovered, the wash the built in hover feedback has always used. */
+    /** Light the node up while hovered, the wash the built-in hover feedback has always used. */
     public static Animation hoverOverlay(float to, long durationMs, Easing easing) {
         return tween(AnimEvent.HOVER, AnimProps.Writer.OVERLAY, 0f, to, durationMs, easing);
     }
@@ -81,51 +86,63 @@ public final class Anims {
         private final AnimEvent event;
         private final float from;
         private final float to;
+        private final long delayMs;
         private final long durationMs;
         private final Easing easing;
         /** Until a trigger arrives this animation stays out of the way and writes nothing. */
         private boolean started;
 
         Tween(AnimValue value, @Nullable AnimProps.Writer writer, @Nullable AnimEvent event,
-              float from, float to, long durationMs, Easing easing) {
+              float from, float to, long delayMs, long durationMs, Easing easing) {
             this.value = value;
             this.writer = writer;
             this.event = event;
             this.from = from;
             this.to = to;
             this.durationMs = durationMs;
+            this.delayMs = delayMs;
             this.easing = easing;
         }
 
         @Override
         public void tick(AnimProps props) {
+            if (!started) return;
             value.update();
-            if (started && writer != null) writer.write(props, value.getValue());
+            if (writer != null) writer.write(props, value.getValue());
         }
 
         @Override
         public void onEvent(AnimEvent event, boolean active) {
             if (this.event != event) return;
             started = true;
-            value.to(active ? to : from, durationMs, easing);
+            value.to(active ? to : from, delayMs, durationMs, easing);
         }
 
         @Override
         public void play() {
             started = true;
-            value.to(to, durationMs, easing);
+            value.to(to, delayMs, durationMs, easing);
         }
 
         @Override
         public void reverse() {
             started = true;
-            value.to(from, durationMs, easing);
+            value.to(from, delayMs, durationMs, easing);
         }
 
         @Override
         public void reset() {
             started = true;
             value.snap(from);
+        }
+
+        @Override
+        public void finish(AnimProps props) {
+            // an animation that was never triggered has no end state to jump to: an exit tween on a node that is
+            // merely being added would otherwise write its exit value, which for fadeOut is an invisible node
+            if (!started) return;
+            value.snap(to);
+            if (writer != null) writer.write(props, value.getValue());
         }
 
         @Override
@@ -143,6 +160,8 @@ public final class Anims {
         private final long durationMs;
         private final boolean loop;
         private final boolean alternate;
+        /** The last key, read once here because the track stops sampling it back after it finishes. */
+        private final float endValue;
         /** Until a trigger arrives this animation stays out of the way and writes nothing. */
         private boolean started;
 
@@ -155,12 +174,14 @@ public final class Anims {
             this.durationMs = durationMs;
             this.loop = loop;
             this.alternate = alternate;
+            this.endValue = track.endValue();
         }
 
         @Override
         public void tick(AnimProps props) {
+            if (!started) return;
             track.update();
-            if (started) writer.write(props, track.getCurrent());
+            writer.write(props, track.getCurrent());
         }
 
         @Override
@@ -177,8 +198,21 @@ public final class Anims {
         }
 
         @Override
+        public void finish(AnimProps props) {
+            // same guard as the tween: an exit timeline on a node that is only being added must stay out of the way
+            if (!started) return;
+            // snap, not stop: stop would leave the track sampling its first key, and the next tick would write that
+            // start value straight back over the end value settled here. Snapping also stops a looping track, which
+            // never stops itself and would otherwise keep a closing node alive forever.
+            track.snap(endValue);
+            writer.write(props, endValue);
+        }
+
+        @Override
         public boolean isRunning() {
             return track.isRunning();
         }
     }
+
+
 }

@@ -20,6 +20,12 @@ public interface IUiNode {
     default void onAdded() {}
     default void onRemoved() {}
     default void onClose() {}
+
+    /**
+     * The host let go of this node to lay itself out again. It is not a close: whatever the node holds stays as it
+     * is, because a rebuilt host is expected to ask for the node back.
+     */
+    default void onDetached() {}
     default void onFocusChanged(boolean focused) {}
     default void onHoverChanged(boolean hovered) {}
 
@@ -45,6 +51,12 @@ public interface IUiNode {
     default boolean isVisible() { return true; }
 
     default boolean isClipped() { return true; }
+
+    /**
+     * Whether the host may drag this node with the mouse. A plain switch: the drag itself belongs to the host, so
+     * a node only says yes or no and never moves itself.
+     */
+    default boolean canDrag() { return false; }
 
     @Nullable
     default AnimProps getRenderProps() { return null; }

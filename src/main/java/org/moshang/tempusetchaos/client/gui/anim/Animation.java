@@ -25,6 +25,14 @@ public interface Animation {
     /** Jump back to the start value. */
     default void reset() {}
 
+    /**
+     * Write the end value right away, without moving through it. Used when animations are switched off: the node
+     * still has to end up where the animation would have left it, so the end state is written instead of skipped.
+     */
+    default void finish(AnimProps props) {
+        play();
+    }
+
     /** Whether this animation is still moving. Lets the host hold a closing node until its exit animation ends. */
     default boolean isRunning() { return false; }
 }

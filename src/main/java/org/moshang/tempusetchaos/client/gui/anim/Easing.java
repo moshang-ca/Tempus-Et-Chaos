@@ -14,21 +14,21 @@ public interface Easing {
     Easing EASE_OUT_QUAD = t -> 1f - (1f - t) * (1f - t);
     Easing EASE_IN_OUT_QUAD = t -> t < 0.5f
             ? 2f * t * t
-            : 1f - (float) Math.pow(-2f * t + 2f, 2f) / 2f;
+            : 1f - 2f * (1f - t) * (1f - t) / 2f;
 
     // ---- Cubic ----
     Easing EASE_IN_CUBIC  = t -> t * t * t;
     Easing EASE_OUT_CUBIC = t -> 1f - (float) Math.pow(1f - t, 3f);
     Easing EASE_IN_OUT_CUBIC = t -> t < 0.5f
             ? 4f * t * t * t
-            : 1f - (float) Math.pow(-2f * t + 2f, 3f) / 2f;
+            : 1f - 4f * (1f - t) * (1f -t) * (1f - t);
 
     // ---- Quart ----
     Easing EASE_IN_QUART  = t -> t * t * t * t;
     Easing EASE_OUT_QUART = t -> 1f - (float) Math.pow(1f - t, 4f);
     Easing EASE_IN_OUT_QUART = t -> t < 0.5f
             ? 8f * t * t * t * t
-            : 1f - (float) Math.pow(-2f * t + 2f, 4f) / 2f;
+            : 1f - 8f * (1f - t) * (1f - t) * (1f - t) * (1f - t);
 
     // ---- Sine ----
     Easing EASE_IN_SINE  = t -> 1f - (float) Math.cos(t * Math.PI * 0.5f);

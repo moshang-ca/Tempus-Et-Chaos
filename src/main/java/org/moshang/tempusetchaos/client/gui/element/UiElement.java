@@ -22,6 +22,9 @@ public abstract class UiElement implements Animated {
 
     @Setter
     protected boolean visible = true;
+    @Getter(AccessLevel.NONE)
+    @Setter
+    protected boolean canDrag = false;
     private boolean hovered;
     @Getter(AccessLevel.NONE)
     private final AnimSet anims = new AnimSet();
@@ -36,6 +39,11 @@ public abstract class UiElement implements Animated {
     @Override
     public AnimSet anims() {
         return anims;
+    }
+
+    @Override
+    public boolean canDrag() {
+        return canDrag;
     }
 
     @Override
