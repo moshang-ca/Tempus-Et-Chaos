@@ -1,7 +1,7 @@
 package org.moshang.tempusetchaos.client.gui;
 
-import com.mojang.logging.LogUtils;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.Rect2i;
@@ -10,17 +10,15 @@ import org.jetbrains.annotations.Nullable;
 import org.moshang.tempusetchaos.client.gui.anim.AnimProps;
 import org.moshang.tempusetchaos.client.gui.element.GhostSlot;
 import org.moshang.tempusetchaos.client.gui.element.UiElement;
-import org.slf4j.Logger;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @ParametersAreNonnullByDefault
 @SuppressWarnings("unused")
 public class WindowManager extends UiHost<IUiWindow> {
-    private static final Logger LOGGER = LogUtils.getLogger();
-
     @Getter
     private final Screen host;
 
@@ -51,7 +49,7 @@ public class WindowManager extends UiHost<IUiWindow> {
         populated = false;
         settling = !firstLayout;
         populate.run();
-        if (isEmpty()) LOGGER.warn("{} opened no window, the screen stays empty", host.getClass().getName());
+        if (isEmpty()) log.warn("{} opened no window, the screen stays empty", host.getClass().getName());
         settling = false;
         populated = true;
     }

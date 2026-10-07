@@ -8,14 +8,17 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import org.moshang.tempusetchaos.api.ICableConnectable;
 import org.moshang.tempusetchaos.api.IChrononNode;
 import org.moshang.tempusetchaos.api.IChrononStorage;
 import org.moshang.tempusetchaos.block.BlockChrononNetCable;
 import org.moshang.tempusetchaos.data.ChrononNetworkData;
+import org.moshang.tempusetchaos.network.ChrononNetworkSyncPayload;
 
 import java.lang.ref.WeakReference;
 import java.util.*;
@@ -32,6 +35,9 @@ public class ChrononNetwork implements IChrononStorage {
     private final Set<BlockPos> energySinks = new HashSet<>();
     private final Set<BlockPos> energyStorages = new HashSet<>();
 
+    private final Set<UUID> observers = new HashSet<>();
+    private boolean shouldSync = false;
+
     public ChrononNetwork(Level level) {
         this(UUID.randomUUID(), level);
     }
@@ -39,6 +45,15 @@ public class ChrononNetwork implements IChrononStorage {
     public ChrononNetwork(UUID uuid, Level level) {
         this.uuid = uuid;
         this.levelRef = new WeakReference<>(level);
+    }
+
+    public void addObserver(UUID uuid) {
+        observers.add(uuid);
+        syncToSingleObserver(uuid, true);
+    }
+
+    public void removeObserver(UUID uuid) {
+        observers.remove(uuid);
     }
 
     public Set<BlockPos> getConnectors() {
@@ -120,17 +135,22 @@ public class ChrononNetwork implements IChrononStorage {
         Level level = this.levelRef.get();
         if (level != null)
             ChrononNetworkData.get(level).save();
+        shouldSync = true;
     }
 
     private static void splitNetwork(Level level, List<Set<BlockPos>> components, UUID oldId) {
         if (level == null) return;
         ChrononNetworkData networkData = ChrononNetworkData.get(level);
+        ChrononNetwork old = networkData.getNetwork(oldId);
+        long avgStored = 0;
+        if (old != null) avgStored = old.chrononStored / components.size();
         for (var component : components) {
             ChrononNetwork network = new ChrononNetwork(level);
             for (BlockPos pos : component) {
                 IChrononNode node = level.getBlockEntity(pos) instanceof IChrononNode n ? n : null;
                 if (node != null) {
                     network.addNode(node);
+                    network.chrononStored = avgStored;
                     node.setNetworkUUID(network.uuid);
                 }
             }
@@ -188,7 +208,7 @@ public class ChrononNetwork implements IChrononStorage {
         if (!canReceive() || amount <= 0) return 0;
         long beReceived = Mth.clamp(capacity - chrononStored, 0, amount);
 
-        if (!simulate) {
+        if (!simulate && beReceived > 0) {
             chrononStored += beReceived;
             markDirty();
         }
@@ -200,17 +220,37 @@ public class ChrononNetwork implements IChrononStorage {
         if (!canExtract() || amount <= 0) return 0;
 
         long beExtracted = Math.min(chrononStored, amount);
-        if (!simulate) {
+        if (!simulate && beExtracted > 0) {
             chrononStored -= beExtracted;
             markDirty();
         }
         return beExtracted;
     }
 
+    public void syncToObservers(boolean force) {
+        if (!shouldSync && !force) return;
+        if (!(levelRef.get() instanceof ServerLevel serverLevel)) return;
+        ChrononNetworkSyncPayload payload = new ChrononNetworkSyncPayload(uuid, chrononStored, capacity);
+        for (UUID uuid : observers) {
+            ServerPlayer player = serverLevel.getServer().getPlayerList().getPlayer(uuid);
+            if (player != null) PacketDistributor.sendToPlayer(player, payload);
+        }
+        shouldSync = false;
+    }
+
+    /** Send sync payload to single player.
+     * This usually be called at {@link addObserver(UUID)} as we should force update data when player open the screen. */
+    public void syncToSingleObserver(UUID playerUid, boolean force) {
+        if (!shouldSync && !force) return;
+        if (!(levelRef.get() instanceof ServerLevel serverLevel)) return;
+        ServerPlayer player = serverLevel.getServer().getPlayerList().getPlayer(playerUid);
+        if (player != null) PacketDistributor.sendToPlayer(player, new ChrononNetworkSyncPayload(uuid, chrononStored, capacity));
+        shouldSync = false;
+    }
+
     public CompoundTag serialize() {
         CompoundTag tag = new CompoundTag();
         // TODO: We should design a strategy to ensure the network data on the disk is valid
-        tag.putBoolean("has_loaded_nearest", true);
         tag.putUUID("uuid", uuid);
         tag.putLong("chronon_stored", chrononStored);
         tag.putLong("chronon_capacity", capacity);

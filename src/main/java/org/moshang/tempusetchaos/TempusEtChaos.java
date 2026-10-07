@@ -1,6 +1,5 @@
 package org.moshang.tempusetchaos;
 
-import com.mojang.logging.LogUtils;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.IEventBus;
@@ -15,12 +14,10 @@ import org.moshang.tempusetchaos.config.Config;
 import org.moshang.tempusetchaos.datagen.LocalizationProvider;
 import org.moshang.tempusetchaos.datagen.TECBlockStateProvider;
 import org.moshang.tempusetchaos.registry.*;
-import org.slf4j.Logger;
 
 @Mod(TempusEtChaos.MODID)
 public class TempusEtChaos {
     public static final String MODID = "tempusetchaos";
-    private static final Logger LOGGER = LogUtils.getLogger();
 
     public TempusEtChaos(IEventBus modEventBus, ModContainer modContainer) {
         modContainer.registerConfig(ModConfig.Type.CLIENT, Config.SPEC);

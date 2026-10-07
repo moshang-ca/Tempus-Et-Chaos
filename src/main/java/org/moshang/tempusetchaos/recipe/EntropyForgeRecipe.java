@@ -102,7 +102,6 @@ public class EntropyForgeRecipe implements Recipe<UniversalRecipeInput> {
     }
 
     private boolean energyMatch(UniversalRecipeInput input) {
-        // 两种能量都不是必需项：cost 为 0 就表示不要求。
         return input.chronon() >= chrononCost && input.energy() >= energyCost;
     }
 

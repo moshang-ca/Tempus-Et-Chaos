@@ -15,15 +15,18 @@ public class ScreenAccelerator extends ContainerWindowScreen<MenuAccelerator> {
 
     @Override
     protected void populate() {
-        windows.open(new MainWindow(menu, 176, 166));
+        windows.open(new MainWindow());
     }
 
-    private static class MainWindow extends SimpleContainerWindow<MenuAccelerator> {
+    private class MainWindow extends SimpleContainerWindow<MenuAccelerator> {
         private static final Cue SPIN = new Cue(0, 150, Easing.EASE_IN_EXPO);
         private static final Cue OPEN = Cue.startingAt(SPIN, 100, 200, Easing.EASE_IN_EXPO);
 
-        public MainWindow(MenuAccelerator menu, int width, int height) {
-            super(menu, width, height, UiTextures.BASE_INVENTORY, 176, 166);
+        public MainWindow() {
+            super(ScreenAccelerator.this.menu, 176, 166, UiTextures.BASE_INVENTORY, 176, 166);
+//            elements.add(new ResourceGaugeElement(12, 17, 10, 54, UiTextures.CHANNEL, ))
+//                    .add(new )
+//                    .add(new TextElement(0, 0, 20, 10, () -> Component.literal(String.valueOf(ChrononNetworkSyncPayload.ClientCache.get(menu.getUuid()).stored())), 0xFF0000FF));
             anims().add(Anims.timeline(AnimEvent.ADDED, SPIN, SPIN.track(0, 1), AnimProps.Writer.SCALE_X))
                     .add(Anims.timeline(AnimEvent.ADDED, OPEN, OPEN.track(0.01f, 1), AnimProps.Writer.SCALE_Y));
         }

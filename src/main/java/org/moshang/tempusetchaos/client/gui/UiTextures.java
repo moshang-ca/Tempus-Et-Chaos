@@ -13,8 +13,10 @@ public final class UiTextures {
     public static final ResourceLocation SLOT = ui("slot.png");
     public static final ResourceLocation BUTTON = uiSprite("button");
     public static final ResourceLocation INPUT_FIELD = uiSprite("input_field");
-    public static final ResourceLocation CHRONON_CHANNEL = ui("chronon_channel.png");
+    public static final ResourceLocation CHANNEL = ui("chronon_channel.png");
     public static final ResourceLocation FRONT_ICON = ui("front_icon.png");
+
+    public static final ResourceLocation CHRONON = uiSprite("chronon");
 
     private UiTextures() {}
 

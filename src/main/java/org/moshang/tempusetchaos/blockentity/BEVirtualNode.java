@@ -25,15 +25,15 @@ public class BEVirtualNode extends BaseChrononNodeBlockEntity {
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         if (tag.hasUUID("network_uuid")) {
-            this.uuid = tag.getUUID("network_uuid");
+            this.networkUUID = tag.getUUID("network_uuid");
         }
     }
 
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
-        if (this.uuid != null) {
-            tag.putUUID("network_uuid", uuid);
+        if (this.networkUUID != null) {
+            tag.putUUID("network_uuid", networkUUID);
         }
     }
 }

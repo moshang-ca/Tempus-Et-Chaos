@@ -58,7 +58,9 @@ public abstract class BaseChrononMachineryBlock extends HorizontalDirectionalBlo
     @Override
     @NotNull
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
+        BlockEntity be = level.getBlockEntity(pos);
         if (!level.isClientSide && level.getBlockEntity(pos) instanceof MenuProvider provider) {
+            if (be instanceof BaseChrononNodeBlockEntity node && node.innerNetwork != null) node.innerNetwork.addObserver(player.getUUID());
             player.openMenu(provider, pos);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);

@@ -136,12 +136,12 @@ public class DemoWindowScreen extends AbstractWindowScreen {
                     .add(Anims.fadeOut(200, Easing.EASE_IN_QUAD))
                     .add(Anims.shrinkOut(200, Easing.EASE_IN_QUAD));
 
-            elements.add(new InputFieldElement(4, TITLE_HEIGHT + 4, () -> String.valueOf(inputFieldRes), a -> inputFieldRes += a))
+            elements.add(new NumberStepperElement(4, TITLE_HEIGHT + 4, () -> String.valueOf(inputFieldRes), a -> inputFieldRes += a))
                     .add(new DemoLabel("label element", 4, 68))
                     .add(new DemoButton(4, 48))
                     .add(new SlotElement(70, 48, () -> DEMO_STACK, () -> List.of(Component.literal("a demo slot"))))
                     .add(new GhostSlotElement(110, 48, () -> ghost, stack -> ghost = stack))
-                    .add(ResourceGaugeElement.ofNoSprite(88, 32, 8, 48, UiTextures.CHRONON_CHANNEL,
+                    .add(ResourceGaugeElement.ofNoSprite(88, 32, 8, 48, UiTextures.CHANNEL,
                             () -> gaugeRatio, 0xFFFFFFFF, () -> List.of(Component.literal(String.valueOf(gaugeRatio)))));
             if (spawnsChild)
                 elements.add(new TextureButtonElement(childButtonLeft(), childButtonTop(), () -> Component.literal("open child"),

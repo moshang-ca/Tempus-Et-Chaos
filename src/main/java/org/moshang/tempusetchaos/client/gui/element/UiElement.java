@@ -1,8 +1,9 @@
 package org.moshang.tempusetchaos.client.gui.element;
 
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import org.moshang.tempusetchaos.client.gui.anim.AnimSet;
@@ -14,6 +15,7 @@ import java.util.List;
 /** A node hosted by a window, positioned in the window's own space, its origin being its top left. */
 @Getter
 @ParametersAreNonnullByDefault
+@Slf4j
 public abstract class UiElement implements Animated {
     protected int x;
     protected int y;
@@ -22,11 +24,10 @@ public abstract class UiElement implements Animated {
 
     @Setter
     protected boolean visible = true;
-    @Getter(AccessLevel.NONE)
-    @Setter
+    @Accessors(fluent = true) @Setter
     protected boolean canDrag = false;
     private boolean hovered;
-    @Getter(AccessLevel.NONE)
+    @Accessors(fluent = true) @Getter
     private final AnimSet anims = new AnimSet();
 
     public UiElement(int x, int y, int width, int height) {
@@ -34,16 +35,6 @@ public abstract class UiElement implements Animated {
         this.y = y;
         this.width = width;
         this.height = height;
-    }
-
-    @Override
-    public AnimSet anims() {
-        return anims;
-    }
-
-    @Override
-    public boolean canDrag() {
-        return canDrag;
     }
 
     @Override

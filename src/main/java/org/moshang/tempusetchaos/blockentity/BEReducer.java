@@ -1,7 +1,7 @@
 package org.moshang.tempusetchaos.blockentity;
 
-import com.mojang.logging.LogUtils;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -16,19 +16,18 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.moshang.tempusetchaos.api.BaseChrononNodeBlockEntity;
-import org.moshang.tempusetchaos.util.MatchSet;
 import org.moshang.tempusetchaos.registry.TECBlockEntities;
-import org.slf4j.Logger;
+import org.moshang.tempusetchaos.util.MatchSet;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @ParametersAreNonnullByDefault
 public class BEReducer extends BaseChrononNodeBlockEntity {
     private static final int BASE_CONSUMPTION = 5;
     private static final int MAX_RED_ENTITY = 32;
-    private static final Logger LOGGER = LogUtils.getLogger();
 
     @Getter
     private final MatchSet blacklist = new MatchSet();
@@ -105,7 +104,7 @@ public class BEReducer extends BaseChrononNodeBlockEntity {
         super.loadAdditional(tag, registries);
         this.reduceMultiplier = Mth.clamp(tag.getInt("red_multiplier"), 2, 4);
         MatchSet.CODEC.parse(NbtOps.INSTANCE, tag.getCompound("blacklist"))
-                .resultOrPartial(error -> LOGGER.warn("Failed to load blacklist: {}", error))
+                .resultOrPartial(error -> log.warn("Failed to load blacklist: {}", error))
                 .ifPresent(loaded -> loaded.ordered().forEach(this.blacklist::add));
     }
 
@@ -114,7 +113,7 @@ public class BEReducer extends BaseChrononNodeBlockEntity {
         super.saveAdditional(tag, registries);
         tag.putInt("red_multiplier", this.reduceMultiplier);
         MatchSet.CODEC.encodeStart(NbtOps.INSTANCE, this.blacklist)
-                .resultOrPartial(error -> LOGGER.warn("Failed to save blacklist: {}", error))
+                .resultOrPartial(error -> log.warn("Failed to save blacklist: {}", error))
                 .ifPresent(nbt -> tag.put("blacklist", nbt));
     }
 

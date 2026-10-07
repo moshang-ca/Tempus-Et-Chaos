@@ -1,16 +1,14 @@
 package org.moshang.tempusetchaos.util;
 
-import com.mojang.logging.LogUtils;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
 
 import java.util.Arrays;
 import java.util.List;
 
+@Slf4j
 public class HashChain<T> {
-    private static final Logger LOGGER = LogUtils.getLogger();
-
     @FunctionalInterface
     public interface Hasher<T> {
         int hash(T t);
@@ -36,7 +34,7 @@ public class HashChain<T> {
             // If the key already exists but does not equal the value (in some exceptional cases),
             // we will ignore it and after it by default.
             if (!cur.value.equals(t)) {
-                LOGGER.warn("Detect hash collision: {} (with {} has in chain), aborting chain", t, cur.value);
+                log.warn("Detect hash collision: {} (with {} has in chain), aborting chain", t, cur.value);
                 return;
             }
             if (prev != null) {

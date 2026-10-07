@@ -41,7 +41,7 @@ public record ChrononNetworkSyncPayload(UUID uuid, long stored, long capacity) i
         }
 
         public static ClientCache get(UUID uuid) {
-            return CACHE.getOrDefault(uuid, DEFAULT);
+            return uuid == null ? DEFAULT : CACHE.getOrDefault(uuid, DEFAULT);
         }
 
         public static void clear() {

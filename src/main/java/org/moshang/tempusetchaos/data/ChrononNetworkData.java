@@ -1,7 +1,7 @@
 package org.moshang.tempusetchaos.data;
 
-import com.mojang.logging.LogUtils;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -11,22 +11,22 @@ import net.minecraft.world.level.saveddata.SavedData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.moshang.tempusetchaos.blockentity.network.ChrononNetwork;
-import org.slf4j.Logger;
 
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 public class ChrononNetworkData extends SavedData {
     private static final String DATA_NAME = "chronon_networks";
-    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final int SYNC_INTERVAL = 5;
 
     public static ChrononNetworkData get(Level level) {
         if (!(level instanceof ServerLevel serverLevel)) return null;
         return serverLevel.getDataStorage().computeIfAbsent(
                 new Factory<>(
                         () -> ChrononNetworkData.create(serverLevel),
-                        ((tag, provider) -> ChrononNetworkData.load(serverLevel, tag, provider))
+                        ((tag, provider) -> ChrononNetworkData.load(serverLevel, tag))
                 ),
                 DATA_NAME
         );
@@ -47,7 +47,7 @@ public class ChrononNetworkData extends SavedData {
 
     public static ChrononNetworkData create(ServerLevel level) { return new ChrononNetworkData(level); }
 
-    public static ChrononNetworkData load(ServerLevel level, CompoundTag tag, HolderLookup.Provider registries) {
+    public static ChrononNetworkData load(ServerLevel level, CompoundTag tag) {
         ChrononNetworkData networkData = new ChrononNetworkData(level);
         ListTag listTag = tag.getList("networks", ListTag.TAG_COMPOUND);
         for (int i = 0; i < listTag.size(); ++i) {
@@ -63,8 +63,18 @@ public class ChrononNetworkData extends SavedData {
     private final ServerLevel level;
     private final Map<UUID, ChrononNetwork> networks = new ConcurrentHashMap<>();
 
+    private int lastSync = -1;
+
     private ChrononNetworkData(ServerLevel level) {
         this.level = level;
+    }
+
+    public void serverTick() {
+        if (lastSync >= SYNC_INTERVAL) {
+            networks.values().forEach(n -> n.syncToObservers(false));
+            lastSync = -1;
+        }
+        lastSync++;
     }
 
     public void save() {
@@ -74,7 +84,7 @@ public class ChrononNetworkData extends SavedData {
     public void addNetwork(ChrononNetwork network) {
         UUID uuid = network.getUuid();
         if (networks.containsKey(uuid)) {
-            LOGGER.warn("Network ({}) has already exist, skip add", uuid);
+            log.warn("Network ({}) has already exist, skip add", uuid);
             return;
         }
         networks.put(uuid, network);
@@ -93,6 +103,10 @@ public class ChrononNetworkData extends SavedData {
 
     public boolean hasNetwork(UUID uuid) {
         return networks.containsKey(uuid);
+    }
+
+    public boolean isEmpty() {
+        return networks.isEmpty();
     }
 
     @Override

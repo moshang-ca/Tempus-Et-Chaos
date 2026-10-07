@@ -14,11 +14,14 @@ import org.moshang.tempusetchaos.blockentity.network.ChrononNetwork;
 import org.moshang.tempusetchaos.data.ChrononNetworkData;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.Objects;
 import java.util.UUID;
 
 @ParametersAreNonnullByDefault
 public abstract class BaseChrononNodeBlockEntity extends BlockEntity implements IChrononNode {
-    protected UUID uuid;
+    @Getter
+    protected UUID networkUUID;
+    @Getter
     protected ChrononNetwork innerNetwork;
     @Getter
     protected final int capacity;
@@ -35,19 +38,16 @@ public abstract class BaseChrononNodeBlockEntity extends BlockEntity implements 
     public void serverTick() {
         if (level == null || level.isClientSide) return;
         if (innerNetwork == null) {
-            innerNetwork = uuid == null ? null : ChrononNetworkData.getLevelNetwork(level, uuid);
+            innerNetwork = networkUUID == null ? null : ChrononNetworkData.getLevelNetwork(level, networkUUID);
         }
     }
 
     @Override
     public void setNetworkUUID(UUID uuid) {
-        this.uuid = uuid;
+        boolean changed = !Objects.equals(this.networkUUID, uuid);
+        this.networkUUID = uuid;
         innerNetwork = null;
-    }
-
-    @Override
-    public UUID getNetworkUUID() {
-        return uuid;
+        if (changed) markUpdate();
     }
 
     @Override
@@ -69,8 +69,8 @@ public abstract class BaseChrononNodeBlockEntity extends BlockEntity implements 
 
     @Nullable
     private ChrononNetwork network() {
-        if (innerNetwork == null && uuid != null && level instanceof ServerLevel serverLevel) {
-            innerNetwork = ChrononNetworkData.getLevelNetwork(serverLevel, uuid);
+        if (innerNetwork == null && networkUUID != null && level instanceof ServerLevel serverLevel) {
+            innerNetwork = ChrononNetworkData.getLevelNetwork(serverLevel, networkUUID);
         }
         return innerNetwork;
     }
@@ -85,15 +85,15 @@ public abstract class BaseChrononNodeBlockEntity extends BlockEntity implements 
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         if (tag.hasUUID("network_uuid")) {
-            this.uuid = tag.getUUID("network_uuid");
+            this.networkUUID = tag.getUUID("network_uuid");
         }
     }
 
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
-        if (this.uuid != null) {
-            tag.putUUID("network_uuid", uuid);
+        if (this.networkUUID != null) {
+            tag.putUUID("network_uuid", networkUUID);
         }
     }
 }

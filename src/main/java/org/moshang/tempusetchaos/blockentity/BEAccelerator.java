@@ -1,7 +1,7 @@
 package org.moshang.tempusetchaos.blockentity;
 
-import com.mojang.logging.LogUtils;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -29,9 +29,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.moshang.tempusetchaos.api.BaseChrononNodeBlockEntity;
 import org.moshang.tempusetchaos.menu.MenuAccelerator;
-import org.moshang.tempusetchaos.util.MatchSet;
 import org.moshang.tempusetchaos.registry.TECBlockEntities;
-import org.slf4j.Logger;
+import org.moshang.tempusetchaos.util.MatchSet;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.ArrayList;
@@ -39,6 +38,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+@Slf4j
 @ParametersAreNonnullByDefault
 public class BEAccelerator extends BaseChrononNodeBlockEntity implements MenuProvider {
     private static final Set<MatchSet.Entry> DEFAULT_BLACKLIST = new HashSet<>();
@@ -47,8 +47,6 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity implements MenuPro
     private static final int MAX_ACC_ENTITY = 32;      // 32 entity/acc (in default)
     public static final int MIN_MULTIPLIER = 2;
     public static final int MAX_MULTIPLIER = 4;
-
-    private static final Logger LOGGER = LogUtils.getLogger();
 
     public static void initDefault() {
 
@@ -181,7 +179,7 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity implements MenuPro
         this.consumed = consumptionOf(this.accelerateMultiplier);
         this.blacklist.clear();
         MatchSet.CODEC.parse(NbtOps.INSTANCE, tag.getCompound("blacklist"))
-                .resultOrPartial(error -> LOGGER.warn("Failed to load blacklist: {}", error))
+                .resultOrPartial(error -> log.warn("Failed to load blacklist: {}", error))
                 .ifPresent(loaded -> loaded.ordered().forEach(this.blacklist::add));
     }
 
@@ -190,7 +188,7 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity implements MenuPro
         super.saveAdditional(tag, registries);
         tag.putInt("acc_multiplier", this.accelerateMultiplier);
         MatchSet.CODEC.encodeStart(NbtOps.INSTANCE, this.blacklist)
-                .resultOrPartial(error -> LOGGER.warn("Failed to save blacklist: {}", error))
+                .resultOrPartial(error -> log.warn("Failed to save blacklist: {}", error))
                 .ifPresent(nbt -> tag.put("blacklist", nbt));
     }
 
