@@ -42,4 +42,9 @@ public class SlotElement extends UiElement {
     public List<Component> getTooltip() {
         return tooltip.get();
     }
+
+    @Override
+    public boolean takesFocus() {
+        return false;
+    }
 }

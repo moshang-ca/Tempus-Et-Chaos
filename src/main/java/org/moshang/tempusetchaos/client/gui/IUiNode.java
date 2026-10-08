@@ -29,6 +29,9 @@ public interface IUiNode {
     default void onFocusChanged(boolean focused) {}
     default void onHoverChanged(boolean hovered) {}
 
+    /** Whether a click on this node moves the focus to it. A node that is not focusable lets the focus go instead. */
+    default boolean takesFocus() { return true; }
+
     /** The host was asked to close this node, but has not removed it yet: the exit animation starts here. */
     default void onClosing() {}
 

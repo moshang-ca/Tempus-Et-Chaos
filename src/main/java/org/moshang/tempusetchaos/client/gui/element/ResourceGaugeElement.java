@@ -55,4 +55,9 @@ public class ResourceGaugeElement extends UiElement {
     public List<Component> getTooltip() {
         return tooltip.get();
     }
+
+    @Override
+    public boolean takesFocus() {
+        return false;
+    }
 }

@@ -97,6 +97,7 @@ public class DemoWindowScreen extends AbstractWindowScreen {
         private int y;
 
         private int inputFieldRes = 0;
+        private String text = "hello";
         private float gaugeRatio = 0;
         private boolean reversed = false;
         private ItemStack ghost = ItemStack.EMPTY;
@@ -137,6 +138,7 @@ public class DemoWindowScreen extends AbstractWindowScreen {
                     .add(Anims.shrinkOut(200, Easing.EASE_IN_QUAD));
 
             elements.add(new NumberStepperElement(4, TITLE_HEIGHT + 4, () -> String.valueOf(inputFieldRes), a -> inputFieldRes += a))
+                    .add(new InputFieldElement(4, 92, 60, text, s -> text = s).maxLength(24).hint("type here"))
                     .add(new DemoLabel("label element", 4, 68))
                     .add(new DemoButton(4, 48))
                     .add(new SlotElement(70, 48, () -> DEMO_STACK, () -> List.of(Component.literal("a demo slot"))))

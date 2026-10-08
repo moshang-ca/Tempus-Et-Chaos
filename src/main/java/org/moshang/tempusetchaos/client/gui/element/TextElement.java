@@ -23,4 +23,9 @@ public class TextElement extends UiElement {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         graphics.drawString(Minecraft.getInstance().font, text.get(), 0, 0, color, false);
     }
+
+    @Override
+    public boolean takesFocus() {
+        return false;
+    }
 }

@@ -308,16 +308,20 @@ public class UiHost<T extends IUiNode> {
         try {
             T node = topmostAt(mouseX, mouseY);
             if (node == null) {
-                // clicks outside every node still belong to the focused one,
-                // that is how vanilla reports "clicked outside the gui"
-                node = getFocused();
-                if (node == null || !handlesOutsideClick(node)) return false;
-                AnimProps.Local local = localPoint(node, mouseX, mouseY);
-                return node.isMouseClicked(local.x(), local.y(), button);
+                // nothing under the cursor: this is the click that takes the focus away. It stays on the node
+                // it is already on only when that node asks for clicks outside itself.
+                T focused = getFocused();
+                if (focused == null || !handlesOutsideClick(focused)) {
+                    setFocused(null);
+                    return false;
+                }
+                AnimProps.Local local = localPoint(focused, mouseX, mouseY);
+                return focused.isMouseClicked(local.x(), local.y(), button);
             }
-            setFocused(node);
             AnimProps.Local local = localPoint(node, mouseX, mouseY);
-            if (!node.isMouseClicked(local.x(), local.y(), button)) return false;
+            boolean accepted = node.isMouseClicked(local.x(), local.y(), button);
+            setFocused(node.takesFocus() ? node : null);
+            if (!accepted) return false;
             onNodePicked(node);
             if (button == 0) {
                 dragging = node;
