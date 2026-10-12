@@ -1,52 +1,90 @@
 package org.moshang.tempusetchaos.datagen;
 
+import lombok.extern.slf4j.Slf4j;
 import net.minecraft.data.PackOutput;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.material.Fluid;
 import net.neoforged.neoforge.common.data.LanguageProvider;
 import net.neoforged.neoforge.registries.DeferredHolder;
-import org.moshang.tempusetchaos.registry.TECBlocks;
-import org.moshang.tempusetchaos.registry.TECItems;
+import org.jetbrains.annotations.Nullable;
+import org.moshang.tempusetchaos.client.gui.annotation.Localization;
+import org.moshang.tempusetchaos.client.gui.annotation.RegistryLocalization;
+import org.moshang.tempusetchaos.client.gui.annotation.Translation;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+
+@Slf4j
 public class LocalizationProvider extends LanguageProvider {
-    public LocalizationProvider(PackOutput output, String modid, String locale) {
+    protected final String locale;
+
+    private final Class<?>[] langClazz;
+
+    public LocalizationProvider(PackOutput output, String modid, String locale, Class<?>... clazz) {
         super(output, modid, locale);
+        this.locale = locale;
+        this.langClazz = clazz;
     }
 
     @Override
     protected void addTranslations() {
-        this.add(TECBlocks.ACCELERATOR.get(), toDisplayName(TECBlocks.ACCELERATOR));
-        this.add(TECBlocks.CHRONON_NET_CABLE.get(), toDisplayName(TECBlocks.CHRONON_NET_CABLE));
-        this.add(TECBlocks.ENTROPY_CRYSTAL_BLOCK.get(), toDisplayName(TECBlocks.ENTROPY_CRYSTAL_BLOCK));
-        this.add(TECBlocks.ENTROPY_NODE.get(), toDisplayName(TECBlocks.ENTROPY_NODE));
-        this.add(TECBlocks.ENTROPY_PIPE.get(), toDisplayName(TECBlocks.ENTROPY_PIPE));
-        this.add(TECBlocks.ENTROPY_REACTOR.get(), toDisplayName(TECBlocks.ENTROPY_REACTOR));
-        this.add(TECBlocks.GAS_ENTROPY.get(), "Gas Entropy");
-        this.add(TECBlocks.REDUCER.get(), toDisplayName(TECBlocks.REDUCER));
-        this.add(TECBlocks.TIME_EXTRACTOR.get(), toDisplayName(TECBlocks.TIME_EXTRACTOR));
-        this.add(TECBlocks.IRON_ENTROPY_VESSEL.get(), toDisplayName(TECBlocks.IRON_ENTROPY_VESSEL));
-        this.add(TECBlocks.REINFORCE_ENTROPY_VESSEL.get(), toDisplayName(TECBlocks.REINFORCE_ENTROPY_VESSEL));
-        this.add(TECBlocks.OBSIDIAN_ENTROPY_VESSEL.get(), toDisplayName(TECBlocks.OBSIDIAN_ENTROPY_VESSEL));
-        this.add(TECBlocks.NETHERITE_ENTROPY_VESSEL.get(), toDisplayName(TECBlocks.NETHERITE_ENTROPY_VESSEL));
-        this.add(TECBlocks.CREATIVE_ENTROPY_VESSEL.get(), toDisplayName(TECBlocks.CREATIVE_ENTROPY_VESSEL));
-        this.add(TECBlocks.ENTROPY_CRYSTAL_ORE.get(), toDisplayName(TECBlocks.ENTROPY_CRYSTAL_ORE));
-
-        this.add(TECItems.ENTROPY_CRYSTAL.get(), toDisplayName(TECItems.ENTROPY_CRYSTAL));
-        this.add(TECItems.GAS_ENTROPY_BUCKET.get(), toDisplayName(TECItems.GAS_ENTROPY_BUCKET));
-        this.add(TECItems.WRENCH.get(), toDisplayName(TECItems.WRENCH));
-
-        this.add("fluid.tempusetchaos.gas_entropy", "Gas Entropy");
-        this.add("jade.tempusetchaos.chronon", "%s / %s ");
-        this.add("jade.tempusetchaos.chronon.short", " %s ");
+        for (Class<?> clazz : langClazz) {
+            scanClass(clazz);
+        }
     }
 
-    protected static <R, T extends R> String toDisplayName(DeferredHolder<R, T> registerHolder) {
-        String[] words = registerHolder.getRegisteredName().split(":")[1].split("_");
-        StringBuilder sb = new StringBuilder();
-        for (String word : words) {
-            if (word.isEmpty()) continue;
-            sb.append(Character.toUpperCase(word.charAt(0)))
-                    .append(word.substring(1))
-                    .append(" ");
+    private void scanClass(Class<?> clazz) {
+        for (Field field : clazz.getDeclaredFields()) {
+            if (!Modifier.isStatic(field.getModifiers())) continue;
+
+            Localization loc = field.getAnnotation(Localization.class);
+            if (loc != null && field.getType() == String.class) {
+                String text = pick(loc.translations());
+                if (text == null) continue;
+                try {
+                    String key = (String) field.get(null);
+                    if (key != null) add(key, text);
+                } catch (IllegalAccessException e) {
+                    log.error("Can not access {}", field, e);
+                }
+                continue;
+            }
+
+            RegistryLocalization regLoc = field.getAnnotation(RegistryLocalization.class);
+            if (regLoc != null && DeferredHolder.class.isAssignableFrom(field.getType())) {
+                String text = pick(regLoc.translations());
+                if (text == null) continue;
+                try {
+                    DeferredHolder<?, ?> holder = (DeferredHolder<?, ?>) field.get(null);
+                    String key = getRegistryKey(holder.get());
+                    if (key != null) add(key, text);
+                } catch (IllegalAccessException e) {
+                    log.error("Can not access {}", field, e);
+                }
+            }
         }
-        return sb.toString().trim();
+    }
+
+    @Nullable
+    private String pick(Translation[] translations) {
+        for (Translation translation : translations) {
+            if (translation.locale().equals(locale)) return translation.text();
+        }
+        log.warn("Found no translation for {}", locale);
+        return null;
+    }
+
+    @Nullable
+    private String getRegistryKey(Object value) {
+        return switch (value) {
+            case Block block -> block.getDescriptionId();
+            case Item item -> item.getDescriptionId();
+            case Fluid fluid -> fluid.getFluidType().getDescriptionId();
+            default -> {
+                log.warn("Unsupported value for {}", value);
+                yield null;
+            }
+        };
     }
 }

@@ -9,14 +9,18 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import org.moshang.tempusetchaos.TempusEtChaos;
 import org.moshang.tempusetchaos.api.VesselTier;
 import org.moshang.tempusetchaos.block.*;
+import org.moshang.tempusetchaos.client.gui.annotation.RegistryLocalization;
+import org.moshang.tempusetchaos.client.gui.annotation.Translation;
 
 import java.util.function.Function;
 
 public class TECBlocks {
     public static final DeferredRegister.Blocks BLOCK_DR = DeferredRegister.createBlocks(TempusEtChaos.MODID);
 
+    @RegistryLocalization(translations = {@Translation(text = "Chronon_cable")})
     public static final DeferredBlock<BlockChrononNetCable> CHRONON_NET_CABLE =
             registerItemLikeBlock("chronon_cable", BlockChrononNetCable::new);
+    @RegistryLocalization(translations = {@Translation(text = "virtual_node")})
     public static final DeferredBlock<BlockVirtualNode> VIRTUAL_NODE =
             registerItemLikeBlock("virtual_node", BlockVirtualNode::new);
     public static final DeferredBlock<BlockTimeExtractor> TIME_EXTRACTOR =

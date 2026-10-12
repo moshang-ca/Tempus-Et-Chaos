@@ -46,7 +46,7 @@ public class TempusEtChaos {
     public void onLanguageGather(GatherDataEvent event) {
         DataGenerator gen = event.getGenerator();
 
-        gen.addProvider(event.includeClient(), new LocalizationProvider(gen.getPackOutput(), MODID, "en_us"));
+        gen.addProvider(event.includeClient(), new LocalizationProvider(gen.getPackOutput(), MODID, "en_us", TECBlocks.class));
         gen.addProvider(event.includeClient(), new TECBlockStateProvider(gen.getPackOutput(), MODID, event.getExistingFileHelper()));
     }
 }
