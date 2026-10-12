@@ -7,7 +7,7 @@ import net.minecraft.network.chat.Component;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.function.Supplier;
 
-/** A single line of text re-read every frame, so it can follow synced menu data. */
+/** A single line of text re-read every frame. */
 @ParametersAreNonnullByDefault
 public class TextElement extends UiElement {
     private final Supplier<Component> text;

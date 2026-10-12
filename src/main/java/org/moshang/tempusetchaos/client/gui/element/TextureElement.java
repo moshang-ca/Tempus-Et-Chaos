@@ -4,7 +4,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
 
-/** An element show the given texture, no any special usage. */
+/** An element drawing one texture at its own origin. */
 public class TextureElement extends UiElement{
     protected final ResourceLocation texture;
 

@@ -7,6 +7,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -28,6 +29,7 @@ import net.minecraft.world.phys.AABB;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.moshang.tempusetchaos.api.BaseChrononNodeBlockEntity;
+import org.moshang.tempusetchaos.api.IMatchable;
 import org.moshang.tempusetchaos.menu.MenuAccelerator;
 import org.moshang.tempusetchaos.registry.TECBlockEntities;
 import org.moshang.tempusetchaos.util.MatchSet;
@@ -40,7 +42,7 @@ import java.util.Set;
 
 @Slf4j
 @ParametersAreNonnullByDefault
-public class BEAccelerator extends BaseChrononNodeBlockEntity implements MenuProvider {
+public class BEAccelerator extends BaseChrononNodeBlockEntity implements IMatchable, MenuProvider {
     private static final Set<MatchSet.Entry> DEFAULT_BLACKLIST = new HashSet<>();
     private static final int[] CONSUMPTION = new int[1025];
     private static final int BASE_CONSUMPTION = 5;     // 5 ch/tick
@@ -146,11 +148,13 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity implements MenuPro
                 : (int) (BASE_CONSUMPTION * (multiplier * multiplier + StrictMath.pow(multiplier, 1.8) * StrictMath.log(multiplier) * 1.4426950408889634));
     }
 
-    public void addBlacklist(MatchSet.Entry entry) {
+    @Override
+    public void addMatchSet(MatchSet.Entry entry) {
         if (blacklist.add(entry)) markUpdate();
     }
 
-    public void removeBlacklist(MatchSet.Entry entry) {
+    @Override
+    public void removeMatchSet(MatchSet.Entry entry) {
         if (blacklist.remove(entry)) markUpdate();
     }
 
@@ -167,7 +171,7 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity implements MenuPro
     @Override
     @NotNull
     public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
-        CompoundTag tag = super.getUpdateTag(registries);
+        CompoundTag tag = new CompoundTag();
         saveAdditional(tag, registries);
         return tag;
     }
@@ -178,7 +182,8 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity implements MenuPro
         this.accelerateMultiplier = Mth.clamp(tag.getInt("acc_multiplier"), MIN_MULTIPLIER, MAX_MULTIPLIER);
         this.consumed = consumptionOf(this.accelerateMultiplier);
         this.blacklist.clear();
-        MatchSet.CODEC.parse(NbtOps.INSTANCE, tag.getCompound("blacklist"))
+        // the codec is listOf, so the key holds a list of compound entries: the type argument is the element type
+        MatchSet.CODEC.parse(NbtOps.INSTANCE, tag.getList("blacklist", Tag.TAG_COMPOUND))
                 .resultOrPartial(error -> log.warn("Failed to load blacklist: {}", error))
                 .ifPresent(loaded -> loaded.ordered().forEach(this.blacklist::add));
     }

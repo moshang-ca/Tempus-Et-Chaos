@@ -7,6 +7,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
@@ -16,6 +17,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.moshang.tempusetchaos.api.BaseChrononNodeBlockEntity;
+import org.moshang.tempusetchaos.api.IMatchable;
 import org.moshang.tempusetchaos.registry.TECBlockEntities;
 import org.moshang.tempusetchaos.util.MatchSet;
 
@@ -25,7 +27,7 @@ import java.util.List;
 
 @Slf4j
 @ParametersAreNonnullByDefault
-public class BEReducer extends BaseChrononNodeBlockEntity {
+public class BEReducer extends BaseChrononNodeBlockEntity implements IMatchable {
     private static final int BASE_CONSUMPTION = 5;
     private static final int MAX_RED_ENTITY = 32;
 
@@ -103,7 +105,9 @@ public class BEReducer extends BaseChrononNodeBlockEntity {
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         this.reduceMultiplier = Mth.clamp(tag.getInt("red_multiplier"), 2, 4);
-        MatchSet.CODEC.parse(NbtOps.INSTANCE, tag.getCompound("blacklist"))
+        this.blacklist.clear();
+        // the codec is listOf, so the key holds a list of compound entries: the type argument is the element type
+        MatchSet.CODEC.parse(NbtOps.INSTANCE, tag.getList("blacklist", Tag.TAG_COMPOUND))
                 .resultOrPartial(error -> log.warn("Failed to load blacklist: {}", error))
                 .ifPresent(loaded -> loaded.ordered().forEach(this.blacklist::add));
     }
@@ -117,11 +121,13 @@ public class BEReducer extends BaseChrononNodeBlockEntity {
                 .ifPresent(nbt -> tag.put("blacklist", nbt));
     }
 
-    public void addBlacklist(MatchSet.Entry entry) {
-        if (blacklist.add(entry)) setChanged();
+    @Override
+    public void addMatchSet(MatchSet.Entry entry) {
+        if (blacklist.add(entry)) markUpdate();
     }
 
-    public void removeBlacklist(MatchSet.Entry entry) {
-        if (blacklist.remove(entry)) setChanged();
+    @Override
+    public void removeMatchSet(MatchSet.Entry entry) {
+        if (blacklist.remove(entry)) markUpdate();
     }
 }

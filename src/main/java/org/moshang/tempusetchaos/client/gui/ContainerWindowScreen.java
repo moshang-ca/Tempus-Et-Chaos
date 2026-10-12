@@ -19,9 +19,6 @@ import java.util.List;
  * The screen a container window lives on: it owns the menu and registers it with the game, while the windows draw
  * and drive it. Both origins stay at zero, because the slots belong to a window's own space, not to the screen's.
  * <p>
- * A subclass implements {@code MenuProvider} and returns one of these from {@code createMenu}, and opens its windows
- * from its own constructor.
- * <p>
  * The lifecycle and input methods below intentionally mirror {@link AbstractWindowScreen}: Java has no multiple
  * inheritance, so a change to one of them has to be made in both.
  */
@@ -46,15 +43,9 @@ public abstract class ContainerWindowScreen<T extends AbstractContainerMenu> ext
         return windows.bounds();
     }
 
-    /**
-     * Opens the windows of this screen. It runs on every {@link #init()}, which the client calls after a construction
-     * and again whenever this screen comes back to the front or is resized.
-     */
+    /** Opens the windows of this screen: it runs on the first layout only, the windows then live until it closes. */
     protected abstract void populate();
 
-    /**
-     * The windows are rebuilt here instead of being built once in the constructor.
-     */
     @Override
     protected void init() {
         super.init();
@@ -87,33 +78,23 @@ public abstract class ContainerWindowScreen<T extends AbstractContainerMenu> ext
     }
 
     /**
-     * The inherited pass draws the dimming, runs the widget layer and announces the screen to the other mods; its
-     * slot loop finds nothing because {@link #isHovering(int, int, int, int, double, double)} answers {@code false}.
-     * The windows are painted over it.
+     * The inherited pass draws the dimming and announces the screen to the other mods; its slot loop finds nothing
+     * because {@link #isHovering(int, int, int, int, double, double)} answers {@code false}.
      */
     @SuppressWarnings("UnstableApiUsage")
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         windows.updateAnimations();
         renderBackground(graphics, mouseX, mouseY, partialTick);
-        // As the vanilla render implementation will render the inventory by default,
-        // we do not reuse the vanilla implementation.
-        // So we should post the render event manually.
+        // the vanilla pass is not reused, so its event is posted here
         NeoForge.EVENT_BUS.post(new ContainerScreenEvent.Render.Background(this, graphics,  mouseX, mouseY));
         windows.render(graphics, mouseX, mouseY, partialTick);
         NeoForge.EVENT_BUS.post(new ContainerScreenEvent.Render.Foreground(this, graphics, mouseX, mouseY));
     }
 
-    @Override
-    public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        super.renderBackground(guiGraphics, mouseX, mouseY, partialTick);
-    }
-
     /**
-     * Every slot hit test of the superclass funnels through here, so answering {@code false} is what keeps the
-     * screen out of the menu: it would otherwise hit test at {@code leftPos/topPos} and drive a second, invisible
-     * copy of the menu at the screen origin. The windows are the only ones that touch the menu, and they do their
-     * own hit testing in their own space.
+     * Every slot hit test of the superclass funnels through here: answering {@code false} keeps the screen out of the
+     * menu, which would otherwise be driven a second time at {@code leftPos/topPos}.
      */
     @Override
     protected boolean isHovering(int x, int y, int width, int height, double mouseX, double mouseY) {

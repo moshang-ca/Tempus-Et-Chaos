@@ -8,8 +8,7 @@ import java.util.List;
 /**
  * <b>A driver</b>: a keyframed timeline sampled over a duration, optionally waiting first, looping or ping-ponging.
  * Where {@link AnimValue} tweens a single segment, a track interpolates through many.
- * {@link #update()} is meant to be called once per frame by whoever drives it (see {@link Anims}); the
- * sampled number is read through {@link #getCurrent()}.
+ * {@link #update()} advances it once per frame and {@link #getCurrent()} reads the sampled number.
  */
 @SuppressWarnings("unused")
 public class Track {

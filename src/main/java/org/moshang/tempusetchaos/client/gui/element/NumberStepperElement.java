@@ -10,7 +10,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.function.IntConsumer;
 import java.util.function.Supplier;
 
-/** A value field: left click steps up, right click steps down. The hover wash is an attached animation. */
+/** A value field: left click steps up, right click steps down. */
 @ParametersAreNonnullByDefault
 public class NumberStepperElement extends UiElement {
     private final Supplier<String> text;

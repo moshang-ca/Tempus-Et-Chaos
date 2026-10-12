@@ -6,6 +6,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.Rect2i;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL11;
 import org.moshang.tempusetchaos.client.gui.anim.Anim;
@@ -48,8 +49,6 @@ public class UiHost<T extends IUiNode> {
 
     @Setter @Getter
     protected boolean canAnimate = true;
-    /** Whether the host is settling, always be true when host rebuilding. */
-    protected boolean settling = false;
 
     @Nullable
     private T dragging;
@@ -67,8 +66,8 @@ public class UiHost<T extends IUiNode> {
     }
 
     /**
-     * Drops the depth the node just wrote, so whatever is painted next can cover it. Items sit above the
-     * plain gui layer and guessing their z is fragile, so the depth buffer is cleared instead.
+     * Drops the depth the node just wrote, so whatever is painted next can cover it: items sit above the plain gui
+     * layer and guessing their z is fragile, so the buffer is cleared instead.
      */
     public static void clearContentDepth(GuiGraphics graphics) {
         graphics.flush();
@@ -108,6 +107,7 @@ public class UiHost<T extends IUiNode> {
             boolean animate = animationsEnabled();
             for (T node : nodes) {
                 if (node instanceof Animated animated) animated.anims().setEnabled(animate);
+                if (node instanceof IScrollable scrollable) scrollable.getScroll().setEnabled(animate);
                 node.updateAnimation();
             }
             finishClosings();
@@ -177,6 +177,7 @@ public class UiHost<T extends IUiNode> {
     /**
      * Takes every node out without closing it: the node is told it lost the host, nothing is torn down.
      */
+    @Deprecated
     public void detachAllNodes() {
         List<T> doomed = detachAll();
         for (int i = doomed.size() - 1; i >= 0; i--) {
@@ -232,11 +233,10 @@ public class UiHost<T extends IUiNode> {
                 if (!isRenderable(node)) continue;
 
                 AnimProps props = node.getRenderProps();
-                // render always gets the real local mouse position: the carried item and the tooltip follow the cursor even
-                // outside the node, what ends up visible is decided by the stacking order below
+                // the local mouse position, even outside the node: the carried item and the tooltip follow the cursor
                 AnimProps.Local local = localPoint(node, mouseX, mouseY);
 
-                // earlier nodes may write a higher gui z (items sit above the gui layer), drop that depth again
+                // items sit above the gui layer, so the depth an earlier node left has to go
                 clearContentDepth(graphics);
                 boolean clipped = applyClip(graphics, node, props);
 
@@ -308,8 +308,8 @@ public class UiHost<T extends IUiNode> {
         try {
             T node = topmostAt(mouseX, mouseY);
             if (node == null) {
-                // nothing under the cursor: this is the click that takes the focus away. It stays on the node
-                // it is already on only when that node asks for clicks outside itself.
+                // nothing under the cursor: the click takes the focus away, unless the focused node asks for
+                // clicks outside itself
                 T focused = getFocused();
                 if (focused == null || !handlesOutsideClick(focused)) {
                     setFocused(null);
@@ -346,7 +346,6 @@ public class UiHost<T extends IUiNode> {
             // is moved here, which is the only place a drag is ever applied
             if (captured.isMouseDragged(local.x(), local.y(), button, dragX, dragY)) return true;
             if (captured != dragging || !captured.canDrag()) return false;
-            // the grab was taken in the node's own space, so the same space gives back how far it moved
             double movedX = local.x() - grabX;
             double movedY = local.y() - grabY;
             captured.setPosition((int) Math.round(captured.getX() + movedX),
@@ -393,7 +392,10 @@ public class UiHost<T extends IUiNode> {
         try {
             T node = focusOrTop();
             if (node == null) return false;
-            if (node.keyPressed(keyCode, scanCode, modifiers)) return true;
+            if (node.keyPressed(keyCode, scanCode, modifiers)) {
+                if (node.releasesFocus()) setFocused(null);
+                return true;
+            }
             return consumeKey(node, keyCode, scanCode, modifiers);
         } finally {
             exit();
@@ -436,7 +438,7 @@ public class UiHost<T extends IUiNode> {
     }
 
     protected boolean hits(T node, double mouseX, double mouseY) {
-        if (!isInteractive(node)) return false;
+        if (!isInteractive(node) || !node.takesPointer()) return false;
         AnimProps.Local local = localPoint(node, mouseX, mouseY);
         return node.isMouseOver(local.x(), local.y());
     }
@@ -470,8 +472,45 @@ public class UiHost<T extends IUiNode> {
         return props.toHost(localX, localY, node.getX(), node.getY(), node.getWidth(), node.getHeight());
     }
 
+    /**
+     * Clips a node to the box it declares with {@link IUiNode#viewport()}: the clip has to be a screen rectangle, and
+     * only the host knows where the node ended up.
+     */
     protected boolean applyClip(GuiGraphics graphics, T node, @Nullable AnimProps props) {
-        return false;
+        Rect2i box = node.viewport();
+        if (box == null) return false;
+        AnimProps.Rect rect = screenRect(node, box);
+        if (rect.left() >= rect.right() || rect.top() >= rect.bottom()) return false;
+        graphics.enableScissor(rect.left(), rect.top(), rect.right(), rect.bottom());
+        return true;
+    }
+
+    /**
+     * Maps a point of this host's space to the screen: the screen host is the screen itself, a host nested in a window
+     * folds that window's placement in.
+     */
+    public AnimProps.Local toScreen(double x, double y) {
+        return new AnimProps.Local(x, y);
+    }
+
+    /** A box of a node's own space as its conservative screen AABB: the node's transform, then this host's placement. */
+    private AnimProps.Rect screenRect(T node, Rect2i box) {
+        double left = Double.MAX_VALUE;
+        double top = Double.MAX_VALUE;
+        double right = -Double.MAX_VALUE;
+        double bottom = -Double.MAX_VALUE;
+        for (int corner = 0; corner < 4; corner++) {
+            AnimProps.Local host = toHost(node,
+                    (corner & 1) == 0 ? box.getX() : box.getX() + box.getWidth(),
+                    (corner & 2) == 0 ? box.getY() : box.getY() + box.getHeight());
+            AnimProps.Local screen = toScreen(host.x(), host.y());
+            left = Math.min(left, screen.x());
+            top = Math.min(top, screen.y());
+            right = Math.max(right, screen.x());
+            bottom = Math.max(bottom, screen.y());
+        }
+        return new AnimProps.Rect((int) Math.floor(left), (int) Math.floor(top),
+                (int) Math.ceil(right), (int) Math.ceil(bottom));
     }
 
     protected void onNodeAdded(T node) {}
@@ -480,9 +519,11 @@ public class UiHost<T extends IUiNode> {
 
     protected void onAllNodesGone() {}
 
-    protected void onNodePicked(T node) {
-        bringToFront(node);
-    }
+    /**
+     * Told that a node was clicked. A host whose stacking is decided by the clicks, the screen stack of windows,
+     * raises the clicked node here. A host that lays its nodes out keeps the order it authored and does nothing.
+     */
+    protected void onNodePicked(T node) {}
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     protected boolean handlesOutsideClick(T node) {
@@ -504,10 +545,8 @@ public class UiHost<T extends IUiNode> {
 
     private void doAdd(T node) {
         nodes.add(node);
+        node.onAttached(this);
         node.onAdded();
-        // a rebuilt host puts its nodes straight into place: the entry animations are triggered as usual, but the
-        // node skips to their end state instead of playing them again on every relayout
-        if (settling && node instanceof Animated animated) animated.anims().settle();
         if (sized) {
             node.init(mc, hostWidth, hostHeight);
         } else {

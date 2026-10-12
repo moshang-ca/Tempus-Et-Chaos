@@ -37,7 +37,7 @@ public class ResourceGaugeElement extends UiElement {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        graphics.blit(texture, 0, 0, getWidth(), getHeight(), 0f, 0f, getWidth(), getHeight(), getWidth(), getHeight());
+        graphics.blitSprite(texture, 0, 0, getWidth(), getHeight());
         int fill = Math.round((getHeight() - 2) * Math.clamp(ratio.get(), 0f, 1f));
         if (fill <= 0) return;
         if (resourceSprite == null) {

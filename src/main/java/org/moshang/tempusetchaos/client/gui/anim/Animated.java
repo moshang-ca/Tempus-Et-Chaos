@@ -3,11 +3,7 @@ package org.moshang.tempusetchaos.client.gui.anim;
 import org.moshang.tempusetchaos.client.gui.IUiNode;
 
 /**
- * A node that carries animations. Implementing this is optional: a node without it keeps the host's
- * plain "no props" path.
- * <p>
- * It only wires the node's lifecycle into the set, which is what removes the old per-frame
- * "advance the driver, then copy it into props" boilerplate.
+ * A node that carries animations and the props they write into, its lifecycle wired into the set.
  */
 public interface Animated extends IUiNode {
     AnimSet anims();

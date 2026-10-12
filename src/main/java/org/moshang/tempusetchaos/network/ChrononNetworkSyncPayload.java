@@ -1,7 +1,7 @@
 package org.moshang.tempusetchaos.network;
 
 import net.minecraft.core.UUIDUtil;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -18,7 +18,7 @@ public record ChrononNetworkSyncPayload(UUID uuid, long stored, long capacity) i
     public static final Type<ChrononNetworkSyncPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(TempusEtChaos.MODID, "chronon_network_sync"));
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, ChrononNetworkSyncPayload> STREAM_CODEC =
+    public static final StreamCodec<FriendlyByteBuf, ChrononNetworkSyncPayload> STREAM_CODEC =
             StreamCodec.composite(
                     UUIDUtil.STREAM_CODEC, ChrononNetworkSyncPayload::uuid,
                     ByteBufCodecs.VAR_LONG, ChrononNetworkSyncPayload::stored,
@@ -44,8 +44,16 @@ public record ChrononNetworkSyncPayload(UUID uuid, long stored, long capacity) i
             return uuid == null ? DEFAULT : CACHE.getOrDefault(uuid, DEFAULT);
         }
 
+        public static float getRatio(UUID uuid) {
+            return uuid == null ? 0.f : get(uuid).ratio();
+        }
+
         public static void clear() {
             CACHE.clear();
+        }
+
+        public float ratio() {
+            return (float) stored / capacity;
         }
     }
 }

@@ -7,6 +7,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
+import org.jetbrains.annotations.Nullable;
+import org.moshang.tempusetchaos.client.gui.anim.AnimProps;
 import org.moshang.tempusetchaos.client.gui.anim.AnimSet;
 import org.moshang.tempusetchaos.client.gui.anim.Animated;
 import org.moshang.tempusetchaos.client.gui.element.UiElement;
@@ -17,25 +19,72 @@ import java.util.List;
 /**
  * A window that hosts elements. Elements live in the window's own space, the host translates the pose for them.
  */
-@Accessors(fluent = true, chain = true)
+@Getter
 @ParametersAreNonnullByDefault
 @SuppressWarnings("unused")
 public abstract class AbstractUiWindow implements IUiWindow, Animated {
     /** The window's own element space, so whoever holds the window can map an element's box out to the screen. */
-    @Getter
-    protected final UiHost<UiElement> elements = new UiHost<>();
-    @Getter
+    @Accessors(fluent = true)
+    protected final UiHost<UiElement> elements = new UiHost<>() {
+        /** Folded over by the window's own placement, which is what lets a viewport element clip in screen space. */
+        @Override
+        public AnimProps.Local toScreen(double x, double y) {
+            return host == null ? new AnimProps.Local(x, y) : host.toHost(AbstractUiWindow.this, x, y);
+        }
+    };
+    @Accessors(fluent = true)
     private final AnimSet anims = new AnimSet();
 
-    @Accessors(fluent = false) @Getter
+    @Setter
     protected IUiWindow parent;
-    @Setter @Getter
+    @Accessors(fluent = true, chain = true) @Setter
     protected boolean canDrag = false;
+
+    @Nullable
+    private WindowManager host;
+
+    protected int x;
+    protected int y;
+    protected int width;
+    protected int height;
+
+    public AbstractUiWindow(int x, int y, int width, int height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
 
     @Override
     public void init(Minecraft mc, int screenWidth, int screenHeight) {
         elements.init(getWidth(), getHeight());
     }
+
+    /**
+     * Opens a window that belongs to this one: it is the host that owns it, the parent link is what keeps it stacked
+     * on top of this window and closed together with it.
+     */
+    protected final void openChild(IUiWindow child) {
+        if (host != null) host.open(child);
+    }
+
+    /** The host owns this window now. */
+    final void attachHost(WindowManager host) {
+        this.host = host;
+    }
+
+    /** The host let this window go: children can no longer be opened from here. */
+    final void detachHost(WindowManager host) {
+        if (this.host == host) this.host = null;
+    }
+
+    /** Asks the host to close this window. */
+    protected void closeSelf() {
+        if (host != null) host.close(this);
+    }
+
+    /** Told when a window this one opened is gone, closed by the player or removed by the host. */
+    protected void onChildForgotten(IUiWindow child) {}
 
     @Override
     public void onResize(int screenWidth, int screenHeight) {
@@ -47,7 +96,7 @@ public abstract class AbstractUiWindow implements IUiWindow, Animated {
         elements.tick();
     }
 
-    /** Both halves matter: the window's own animations and every element's. */
+    /** The window's own animations and every element's. */
     @Override
     public void updateAnimation() {
         anims.tick();
@@ -62,6 +111,12 @@ public abstract class AbstractUiWindow implements IUiWindow, Animated {
     @Override
     public void onRemoved() {
         elements.disposeAll();
+    }
+
+    @Override
+    public void setPosition(int x, int y) {
+        this.x = x;
+        this.y = y;
     }
 
     @Override
@@ -133,7 +188,7 @@ public abstract class AbstractUiWindow implements IUiWindow, Animated {
 
     protected void onMouseMoved(double mouseX, double mouseY) {}
 
-    protected boolean onMouseClicked(double mouseX, double mouseY, int button) { return false; }
+    protected boolean onMouseClicked(double mouseX, double mouseY, int button) { return button == 0; }
 
     protected boolean onMouseReleased(double mouseX, double mouseY, int button) { return false; }
 
@@ -146,4 +201,9 @@ public abstract class AbstractUiWindow implements IUiWindow, Animated {
     protected boolean onKeyReleased(int keyCode, int scanCode, int modifiers) { return false; }
 
     protected boolean onCharTyped(char codePoint, int modifiers) { return false; }
+
+    /** The origin that centers a box of {@code childSize} inside the parent box at {@code parentOrigin}. */
+    public static int centered(int parentOrigin, int parentSize, int childSize) {
+        return parentOrigin + Math.abs(parentSize - childSize) / 2;
+    }
 }

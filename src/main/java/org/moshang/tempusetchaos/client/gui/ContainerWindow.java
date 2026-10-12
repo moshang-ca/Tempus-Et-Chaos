@@ -2,7 +2,6 @@ package org.moshang.tempusetchaos.client.gui;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.datafixers.util.Pair;
-import lombok.Getter;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -33,9 +32,6 @@ import java.util.Set;
  * carried stack, the spread drag and the touch paths all belong to this object.
  * <p>
  * Grabbing a spot that is not a slot drags the window, so the frame of the window is its own title bar.
- * <p>
- * Do not animate {@link org.moshang.tempusetchaos.client.gui.anim.AnimProps.Writer#OVERLAY} on a container window:
- * the wash lands on top of everything the window draws, the carried item included. Use the alpha writer instead.
  */
 @ParametersAreNonnullByDefault
 @SuppressWarnings("unused")
@@ -45,14 +41,6 @@ public abstract class ContainerWindow<T extends AbstractContainerMenu> extends A
     protected final T menu;
     protected final Minecraft mc = Minecraft.getInstance();
 
-    @Getter
-    private int x;
-    @Getter
-    private int y;
-    @Getter
-    private int width;
-    @Getter
-    private int height;
     private boolean centered;
 
     @Nullable
@@ -91,14 +79,12 @@ public abstract class ContainerWindow<T extends AbstractContainerMenu> extends A
     private ItemStack lastQuickMoved = ItemStack.EMPTY;
 
     protected ContainerWindow(T menu, int width, int height) {
+        super(0, 0, width, height);
         this.menu = menu;
-        this.width = width;
-        this.height = height;
     }
 
     @Override
     public void init(Minecraft mc, int screenWidth, int screenHeight) {
-        // the window carries its own geometry, so the first layout is the only one that places it
         if (!centered) {
             x = (screenWidth - width) / 2;
             y = (screenHeight - height) / 2;
@@ -122,7 +108,7 @@ public abstract class ContainerWindow<T extends AbstractContainerMenu> extends A
     protected void renderContent(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderBg(graphics, partialTick, mouseX, mouseY);
 
-        // the slots sit above the window art, the labels and the elements come back down over them
+        // slots above the window art, labels and elements back over them
         var pose = graphics.pose();
         pose.pushPose();
         pose.translate(0f, 0f, AbstractContainerScreen.SLOT_ITEM_BLIT_OFFSET);
@@ -141,8 +127,8 @@ public abstract class ContainerWindow<T extends AbstractContainerMenu> extends A
     }
 
     /**
-     * The stack on the cursor, drawn after every window by the host. This runs unclipped and unposed with the mouse
-     * in host space, so the offsets are the plain vanilla ones and the stack can never end up under a window.
+     * The stack on the cursor, drawn after every window by the host: unclipped and unposed with the mouse in host
+     * space, so the offsets are the plain vanilla ones and the stack can never end up under a window.
      */
     @Override
     public void renderForeground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
@@ -185,8 +171,8 @@ public abstract class ContainerWindow<T extends AbstractContainerMenu> extends A
     @Override
     protected boolean onMouseClicked(double mouseX, double mouseY, int button) {
         Slot slot = findSlot(mouseX, mouseY);
-        // an empty hand on the frame is a drag handle: the press is claimed here so the host starts the framework
-        // drag, the move itself is the host's job. The flag gates whether the host may drag at all.
+        // an empty hand on the frame is a drag handle: the press has to be claimed here for the host to start the
+        // framework drag, the flag being what gates whether the host may drag at all
         if (button == 0 && slot == null && !hasClickedOutside(mouseX, mouseY)) return canDrag;
 
         InputConstants.Key mouseKey = InputConstants.Type.MOUSE.getOrCreate(button);
@@ -383,7 +369,7 @@ public abstract class ContainerWindow<T extends AbstractContainerMenu> extends A
         return handled;
     }
 
-    /** The window art, drawn at the window origin: the host has already moved the pose here. */
+    /** The window art, drawn at the window origin. */
     protected abstract void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY);
 
     /** Drawn over the slots, at the window origin. Empty by default. */

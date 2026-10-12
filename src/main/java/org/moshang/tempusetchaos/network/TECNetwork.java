@@ -16,5 +16,17 @@ public class TECNetwork {
                 ChrononNetworkSyncPayload.STREAM_CODEC,
                 ChrononNetworkSyncPayload.ClientCache::handle
         );
+
+        registrar.playToServer(
+                MultiplierModifyPayload.TYPE,
+                MultiplierModifyPayload.STREAM_CODEC,
+                MultiplierModifyPayload::handle
+        );
+
+        registrar.playToServer(
+                MatchSetModifyPayload.TYPE,
+                MatchSetModifyPayload.STREAM_CODEC,
+                MatchSetModifyPayload::handle
+        );
     }
 }

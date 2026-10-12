@@ -24,11 +24,13 @@ public class MenuAccelerator extends ChrononMenu<BEAccelerator> {
         this.data = new ContainerData() {
             @Override
             public int get(int index) {
-                return index == 0 ? blockEntity.getAccelerateMultiplier() : BEAccelerator.MIN_MULTIPLIER;
+                return blockEntity.getAccelerateMultiplier();
             }
 
             @Override
-            public void set(int index, int value) {}
+            public void set(int index, int value) {
+                blockEntity.setAccelerateMultiplier(value);
+            }
 
             @Override
             public int getCount() {

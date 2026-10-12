@@ -1,6 +1,7 @@
 package org.moshang.tempusetchaos.client.gui.element;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -16,18 +17,23 @@ import java.util.function.Supplier;
  * here: the value lives wherever the window keeps it, the supplier reads it back and the setter writes it.
  */
 @ParametersAreNonnullByDefault
-public class GhostSlotElement extends SlotElement implements GhostSlot {
+public class PhantomSlotElement extends SlotElement implements GhostSlot {
     private final Predicate<ItemStack> filter;
     private final Consumer<ItemStack> setter;
 
-    public GhostSlotElement(int x, int y, Supplier<ItemStack> stack, Consumer<ItemStack> setter) {
+    public PhantomSlotElement(int x, int y, Supplier<ItemStack> stack, Consumer<ItemStack> setter) {
         this(x, y, stack, s -> true, setter);
     }
 
-    public GhostSlotElement(int x, int y, Supplier<ItemStack> stack, Predicate<ItemStack> filter, Consumer<ItemStack> setter) {
+    public PhantomSlotElement(int x, int y, Supplier<ItemStack> stack, Predicate<ItemStack> filter, Consumer<ItemStack> setter) {
         super(x, y, stack, List::of);
         this.filter = filter;
         this.setter = setter;
+    }
+
+    @Override
+    public void renderForeground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        graphics.fill(x + 1, y + 1, x + width, y + height, 0x38FFFFFF);
     }
 
     @Override

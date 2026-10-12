@@ -24,9 +24,9 @@ public final class Anims {
         return new Tween(value, null, event, from, to, cue.delayMs(), cue.durationMs(), cue.easing());
     }
 
-    /** Tween bound to no event: started with {@link Animation#play()}, rewound with {@link Animation#reset()}. */
+    /** Tween bound to no event. */
     public static Animation manual(AnimProps.Writer writer, float from, float to, long durationMs, Easing easing) {
-        return new Tween(new AnimValue(from), writer, null, from, to, durationMs, 0L, easing);
+        return new Tween(new AnimValue(from), writer, null, from, to, 0L, durationMs, easing);
     }
 
     public static Animation timeline(AnimEvent event, Track track, long durationMs, boolean loop, boolean alternate, AnimProps.Writer writer) {
@@ -35,8 +35,7 @@ public final class Anims {
 
     /**
      * A timeline placed by a {@link Cue}: it holds its first key until the cue's delay has passed, then moves over
-     * the cue's duration. Every node handed the same cue runs on the same window, which is how a multi node effect
-     * stays in step without any of them owning the timing.
+     * the cue's duration.
      */
     public static Animation timeline(AnimEvent event, Cue cue, Track track, AnimProps.Writer writer) {
         return new Timeline(track, writer, event, cue.delayMs(), cue.durationMs(), false, false);
@@ -62,7 +61,7 @@ public final class Anims {
         return tween(AnimEvent.CLOSING, AnimProps.Writer.SCALE_XY, 1f, 0.9f, durationMs, easing);
     }
 
-    /** Light the node up while hovered, the wash the built-in hover feedback has always used. */
+    /** Light the node up while hovered. */
     public static Animation hoverOverlay(float to, long durationMs, Easing easing) {
         return tween(AnimEvent.HOVER, AnimProps.Writer.OVERLAY, 0f, to, durationMs, easing);
     }
@@ -213,6 +212,4 @@ public final class Anims {
             return track.isRunning();
         }
     }
-
-
 }

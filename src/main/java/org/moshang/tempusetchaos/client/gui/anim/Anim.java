@@ -3,9 +3,7 @@ package org.moshang.tempusetchaos.client.gui.anim;
 import net.minecraft.Util;
 
 /**
- * Time base and interpolation helpers.
- * Stateless: animations read the clock through here instead of carrying their own timers, so they stay
- * independent of both the tick rate and the frame rate.
+ * Time base and interpolation helpers, stateless, so animations stay independent of the tick rate and the frame rate.
  */
 public final class Anim {
     public static final float EPSILON = 0.001f;

@@ -4,12 +4,11 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 
 /**
- * <b>The output</b>: everything an animated node hands to the host.
- * {@link org.moshang.tempusetchaos.client.gui.UiHost} is the only consumer, it applies the transform
- * before drawing the node and paints {@link #overlay} on top afterwards.
+ * <b>The output</b>: everything an animated node hands to the host, which applies the transform before drawing the
+ * node and paints {@link #overlay} on top afterwards.
  * <p>
- * Animations never write these fields by hand, they go through a {@link Writer}. Offsets are host space
- * pixels relative to the node origin, rotation is in radians and the pivot is a ratio of the node size.
+ * Offsets are host space pixels relative to the node origin, rotation is in radians and the pivot is a ratio of the
+ * node size.
  */
 @SuppressWarnings("unused")
 public final class AnimProps {
@@ -19,9 +18,7 @@ public final class AnimProps {
     public float offsetY;
     public float alpha = 1f;
     /**
-     * White wash drawn over the node once it has rendered, 0 = none, 1 = opaque. It goes on top of
-     * everything the node draws, so it suits elements and plain windows; on a
-     * {@code ContainerWindow} it would also cover the carried item, use {@link #alpha} there instead.
+     * White wash drawn over the node once it has rendered, 0 = none, 1 = opaque, on top of everything the node draws.
      */
     public float overlay;
     public float scaleX = 1f;

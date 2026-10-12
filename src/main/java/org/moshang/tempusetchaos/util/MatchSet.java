@@ -3,15 +3,20 @@ package org.moshang.tempusetchaos.util;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.item.Item;
+import net.minecraft.world.item.*;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.network.codec.NeoForgeStreamCodecs;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -122,6 +127,23 @@ public final class MatchSet {
                     Codec.BOOL.optionalFieldOf("is_tag", false).forGetter(Entry::isTag)
             ).apply(instance, Entry::new));
 
+        public static final StreamCodec<FriendlyByteBuf, Entry> STREAM_CODEC =
+                StreamCodec.composite(
+                        Kind.STREAM_CODEC, Entry::kind,
+                        ResourceLocation.STREAM_CODEC, Entry::id,
+                        ByteBufCodecs.BOOL, Entry::isTag,
+                        Entry::new
+                );
+
+        public static Entry fromItemStack(ItemStack itemStack) {
+            Item item = itemStack.getItem();
+            if (item instanceof SpawnEggItem egg) {
+                return entity(BuiltInRegistries.ENTITY_TYPE.getKey(egg.getType(itemStack)));
+            } else if (item instanceof BlockItem block) {
+                return block(BuiltInRegistries.BLOCK.getKey(block.getBlock()));
+            } else throw new IllegalArgumentException("Unknown item type: " + itemStack);
+        }
+
         public static Entry block(ResourceLocation id) {
             return new Entry(Kind.BLOCK, id, false);
         }
@@ -135,6 +157,24 @@ public final class MatchSet {
             return new Entry(Kind.ENTITY, id, true);
         }
 
+        /** Best effort display stack: an entry a screen can not draw shows as empty instead of failing. */
+        public static ItemStack toItemStack(Entry entry) {
+            // As we do not support tag filter yet.
+            if (entry.isTag) return ItemStack.EMPTY;
+
+            switch (entry.kind) {
+                case BLOCK:
+                    Item block = BuiltInRegistries.BLOCK.get(entry.id).asItem();
+                    return block == Items.AIR ? ItemStack.EMPTY : new ItemStack(block);
+                case ENTITY:
+                    if (!BuiltInRegistries.ENTITY_TYPE.containsKey(entry.id)) return ItemStack.EMPTY;
+                    SpawnEggItem egg = SpawnEggItem.byId(BuiltInRegistries.ENTITY_TYPE.get(entry.id));
+                    return egg == null ? ItemStack.EMPTY : new ItemStack(egg);
+                default:
+                    return ItemStack.EMPTY;
+            }
+        }
+
         public String serializedName() {
             return kind.name().toLowerCase(Locale.ROOT);
         }
@@ -143,6 +183,18 @@ public final class MatchSet {
             BLOCK, ENTITY, UNKNOWN;
 
             public static final Codec<Kind> CODEC = StringRepresentable.fromEnum(Kind::values);
+
+            public static final StreamCodec<FriendlyByteBuf, Kind> STREAM_CODEC = NeoForgeStreamCodecs.enumCodec(Kind.class);
+
+            public static Kind fromItemStack(ItemStack itemStack) {
+                if (itemStack.isEmpty()) return UNKNOWN;
+                Item item = itemStack.getItem();
+                return switch (item) {
+                    case BlockItem block -> Kind.BLOCK;
+                    case SpawnEggItem egg -> Kind.ENTITY;
+                    default -> Kind.UNKNOWN;
+                };
+            }
 
             public ResourceKey<? extends Registry<?>> registryFor() {
                 return switch (this) {

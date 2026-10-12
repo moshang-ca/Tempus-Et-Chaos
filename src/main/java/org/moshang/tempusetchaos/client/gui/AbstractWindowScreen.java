@@ -32,10 +32,8 @@ public abstract class AbstractWindowScreen extends Screen implements WindowScree
     }
 
     /**
-     * Opens the windows of this screen. It runs on every {@link #init()}, which the client calls after a construction
-     * and again whenever this screen comes back to the front or is resized, so it has to be written to build the
-     * windows from scratch rather than to add to whatever is already there. The list is emptied first, the same way
-     * vanilla drops its widgets before rebuilding them.
+     * Opens the windows of this screen: it runs on the first layout only, because a window lives on until the screen
+     * closes, so whatever a window holds survives a resize on its own.
      */
     protected abstract void populate();
 

@@ -6,8 +6,7 @@ import javax.annotation.ParametersAreNonnullByDefault;
 
 /**
  * An element the player fills by dropping an ingredient on it from outside the screen, without any real
- * {@code Slot} behind it. Whoever picks the element up asks {@link #accepts} first and then hands the stack
- * to {@link #accept}, which is where the window decides what the new value means for its own data.
+ * {@code Slot} behind it.
  */
 @ParametersAreNonnullByDefault
 public interface GhostSlot {

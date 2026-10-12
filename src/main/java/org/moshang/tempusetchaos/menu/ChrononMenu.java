@@ -1,6 +1,7 @@
 package org.moshang.tempusetchaos.menu;
 
 import lombok.Getter;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -17,10 +18,13 @@ import java.util.UUID;
 public abstract class ChrononMenu<T extends BaseChrononNodeBlockEntity> extends AbstractContainerMenu {
     @Getter
     protected final T blockEntity;
+    @Getter
+    protected final BlockPos blockPos;
 
     protected ChrononMenu(@Nullable MenuType<?> menuType, int containerId, Inventory inventory, T blockEntity) {
         super(menuType, containerId);
         this.blockEntity = blockEntity;
+        blockPos = blockEntity.getBlockPos();
 
         for (int l = 0; l < 3; l++) {
             for (int j1 = 0; j1 < 9; j1++) {

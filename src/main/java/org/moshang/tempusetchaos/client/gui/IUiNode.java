@@ -2,6 +2,7 @@ package org.moshang.tempusetchaos.client.gui;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.Rect2i;
 import org.jetbrains.annotations.Nullable;
 import org.moshang.tempusetchaos.client.gui.anim.AnimProps;
 
@@ -18,12 +19,13 @@ public interface IUiNode {
     default void onResize(int hostWidth, int hostHeight) {}
     default void tick() {}
     default void onAdded() {}
+    /** Told which host now holds this node. */
+    default void onAttached(UiHost<?> host) {}
     default void onRemoved() {}
     default void onClose() {}
 
     /**
-     * The host let go of this node to lay itself out again. It is not a close: whatever the node holds stays as it
-     * is, because a rebuilt host is expected to ask for the node back.
+     * The host let go of this node to lay itself out again: not a close, whatever the node holds stays as it is.
      */
     default void onDetached() {}
     default void onFocusChanged(boolean focused) {}
@@ -31,6 +33,9 @@ public interface IUiNode {
 
     /** Whether a click on this node moves the focus to it. A node that is not focusable lets the focus go instead. */
     default boolean takesFocus() { return true; }
+
+    /** Asked after this node consumed a key: the node is done with the keyboard and the focus moves on. */
+    default boolean releasesFocus() { return false; }
 
     /** The host was asked to close this node, but has not removed it yet: the exit animation starts here. */
     default void onClosing() {}
@@ -53,11 +58,20 @@ public interface IUiNode {
 
     default boolean isVisible() { return true; }
 
+    /** Whether this node can take the pointer at all, false making it pure decoration. */
+    default boolean takesPointer() { return true; }
+
     default boolean isClipped() { return true; }
 
     /**
-     * Whether the host may drag this node with the mouse. A plain switch: the drag itself belongs to the host, so
-     * a node only says yes or no and never moves itself.
+     * The box of this node's own space its drawing is clipped to, null drawing it unclipped.
+     */
+    @Nullable
+    default Rect2i viewport() { return null; }
+
+    /**
+     * Whether the host may drag this node with the mouse. A plain switch: the drag belongs to the host, a node only
+     * says yes or no.
      */
     default boolean canDrag() { return false; }
 
@@ -67,16 +81,15 @@ public interface IUiNode {
     void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick);
 
     /**
-     * Drawn by the host after every node has had its {@link #render}, with no clip and no pose, and with the mouse in
-     * host space. This is the place for content that belongs above the whole screen instead of inside the node's own
-     * stacking, like the item on the cursor.
+     * Drawn by the host after every node has had its {@link #render}, with the node's own pose and clip left off and
+     * the mouse in the host's space rather than local coordinates, so the content is placed by what it draws itself.
      */
     default void renderForeground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {}
 
     /**
-     * Drawn by the host once every node has had its {@link #renderForeground}, for the node the mouse is on, with no
-     * clip and no pose, and with the mouse in host space. This is the place for tooltips: they follow the cursor past
-     * the node's own bounds, but stay under whatever covers the node.
+     * Drawn by the host once every node has had its {@link #renderForeground}, for the node the mouse is on, also with
+     * the node's own pose and clip left off. It is the place for content that follows the cursor past the node's own
+     * bounds and still stays under whatever covers the node.
      */
     default void renderOverlay(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {}
 

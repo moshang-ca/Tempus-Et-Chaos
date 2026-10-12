@@ -34,24 +34,21 @@ public class WindowManager extends UiHost<IUiWindow> {
     }
 
     /**
-     * Lays this manager out for a screen again and lets it refill itself. The client calls this on every
-     * {@code Screen#init}, which happens on a construction, on a return to the front and on a resize, so it always
-     * starts from an empty list and never keeps a window across two layouts.
-     * <p>
-     * Only the first layout plays the entry animations. A relayout rebuilds the same windows the player is already
-     * looking at, so playing an opening move again would make the screen blink every time it comes back, for
-     * instance after a look at a jei recipe: those nodes are put straight into place instead.
+     * Lays this manager out for a screen again: the client calls this on every {@code Screen#init}, which happens on a
+     * construction, on a return to the front and on a resize. Only a layout that has no window yet runs the populator;
+     * a window that is already open keeps its place and its state, and a later layout just lays the live ones out
+     * again.
      */
     public void rebuild(int hostWidth, int hostHeight, Runnable populate) {
-        boolean firstLayout = !populated;
+        if (populated && !isEmpty()) {
+            onResize(hostWidth, hostHeight);
+            return;
+        }
         init(hostWidth, hostHeight);
-        detachAllNodes();
         populated = false;
-        settling = !firstLayout;
         populate.run();
-        if (isEmpty()) log.warn("{} opened no window, the screen stays empty", host.getClass().getName());
-        settling = false;
         populated = true;
+        if (isEmpty()) log.warn("{} opened no window, the screen stays empty", host.getClass().getName());
     }
 
     @Override
@@ -66,9 +63,9 @@ public class WindowManager extends UiHost<IUiWindow> {
     }
 
     /**
-     * The box the open windows occupy by layout, in screen coordinates, their animations left out. This is what a
-     * screen reports to other mods: a window that is still sliding or growing owns its place already, so the answer
-     * stays steady while it moves. Null when nothing is open.
+     * The box the open windows occupy by layout, in screen coordinates, their animations left out: a window that is
+     * still sliding or growing owns its place already, so the answer stays steady while it moves, which is what a
+     * screen reports to other mods. Null when nothing is open.
      */
     @Nullable
     public Rect2i bounds() {
@@ -94,12 +91,69 @@ public class WindowManager extends UiHost<IUiWindow> {
             if (!(window instanceof AbstractUiWindow ui) || !isInteractive(window)) continue;
             for (UiElement element : ui.elements().getNodes()) {
                 if (!element.isVisible()) continue;
-                if (element instanceof GhostSlot slot && slot.accepts(stack)) {
+                if (element instanceof GhostSlot slot && slot.accepts(stack) && !isCovered(ui, element)) {
                     targets.add(new GhostTarget(ui, element, slot));
                 }
             }
         }
         return targets;
+    }
+
+    /**
+     * Whether something that takes the pointer is drawn over this element, which makes it a spot the player cannot
+     * really reach. The stacking is read, not measured: a node later in its host's list is painted later and therefore
+     * sits on top, so only the entries behind this element have to be looked at.
+     */
+    private boolean isCovered(AbstractUiWindow window, UiElement element) {
+        Rect2i box = screenBox(window, element);
+        if (box.getWidth() <= 0 || box.getHeight() <= 0) return false;
+
+        List<UiElement> siblings = window.elements().getNodes();
+        for (int i = siblings.indexOf(element) + 1; i < siblings.size(); i++) {
+            UiElement other = siblings.get(i);
+            if (!other.takesPointer() || !overlaps(screenBox(window, other), box)) continue;
+            return true;
+        }
+
+        int index = nodes.indexOf(window);
+        for (int i = index + 1; i < nodes.size(); i++) {
+            IUiWindow above = nodes.get(i);
+            if (!above.takesPointer() || !overlaps(windowBox(above), box)) continue;
+            return true;
+        }
+        return false;
+    }
+
+    /** The element's box in screen coordinates, with both its own transform and the window's applied. */
+    private Rect2i screenBox(AbstractUiWindow window, UiElement element) {
+        UiHost<UiElement> elements = window.elements();
+        double left = Double.MAX_VALUE;
+        double top = Double.MAX_VALUE;
+        double right = -Double.MAX_VALUE;
+        double bottom = -Double.MAX_VALUE;
+        for (int corner = 0; corner < 4; corner++) {
+            AnimProps.Local local = elements.toHost(element,
+                    (corner & 1) == 0 ? 0 : element.getWidth(),
+                    (corner & 2) == 0 ? 0 : element.getHeight());
+            AnimProps.Local screen = toHost(window, local.x(), local.y());
+            left = Math.min(left, screen.x());
+            top = Math.min(top, screen.y());
+            right = Math.max(right, screen.x());
+            bottom = Math.max(bottom, screen.y());
+        }
+        int x = (int) Math.floor(left);
+        int y = (int) Math.floor(top);
+        return new Rect2i(x, y, (int) Math.ceil(right) - x, (int) Math.ceil(bottom) - y);
+    }
+
+    /** The window's own box in screen coordinates. Laid out rather than measured, exactly like {@link #bounds()}. */
+    private static Rect2i windowBox(IUiWindow window) {
+        return new Rect2i(window.getX(), window.getY(), window.getWidth(), window.getHeight());
+    }
+
+    private static boolean overlaps(Rect2i a, Rect2i b) {
+        return a.getX() < b.getX() + b.getWidth() && b.getX() < a.getX() + a.getWidth()
+                && a.getY() < b.getY() + b.getHeight() && b.getY() < a.getY() + a.getHeight();
     }
 
     @Override
@@ -109,10 +163,23 @@ public class WindowManager extends UiHost<IUiWindow> {
         nodes.addAll(group);
     }
 
+    /** The screen stack is ordered by the clicks: the window the player just used goes to the front. */
+    @Override
+    protected void onNodePicked(IUiWindow window) {
+        bringToFront(window);
+    }
+
     @Override
     protected void onNodeAdded(IUiWindow window) {
+        if (window instanceof AbstractUiWindow ui) ui.attachHost(this);
         normalizeOrder();
         clampInto(window);
+    }
+
+    @Override
+    protected void onNodeRemoved(IUiWindow window) {
+        if (window instanceof AbstractUiWindow ui) ui.detachHost(this);
+        if (window.getParent() instanceof AbstractUiWindow parent) parent.onChildForgotten(window);
     }
 
     /**
@@ -136,6 +203,7 @@ public class WindowManager extends UiHost<IUiWindow> {
     @Override
     protected void onHostResized() {
         for (IUiWindow window : nodes) {
+            window.onRelayout(hostWidth(), hostHeight());
             clampInto(window);
         }
     }
@@ -214,28 +282,12 @@ public class WindowManager extends UiHost<IUiWindow> {
         }
 
         /**
-         * The element's box in screen coordinates. Recomputed rather than stored because a caller may hold on
-         * to the target while the window moves, and because the element's own animations scale or turn it.
+         * The element's box in screen coordinates, recomputed rather than stored because the element may move or
+         * animate between two calls.
          */
         public Rect2i area() {
-            UiHost<UiElement> elements = window.elements();
-            double left = Double.MAX_VALUE;
-            double top = Double.MAX_VALUE;
-            double right = -Double.MAX_VALUE;
-            double bottom = -Double.MAX_VALUE;
-            for (int corner = 0; corner < 4; corner++) {
-                AnimProps.Local local = elements.toHost(element,
-                        (corner & 1) == 0 ? 0 : element.getWidth(),
-                        (corner & 2) == 0 ? 0 : element.getHeight());
-                AnimProps.Local screen = toHost(window, local.x(), local.y());
-                left = Math.min(left, screen.x());
-                top = Math.min(top, screen.y());
-                right = Math.max(right, screen.x());
-                bottom = Math.max(bottom, screen.y());
-            }
-            int x = (int) Math.floor(left);
-            int y = (int) Math.floor(top);
-            return new Rect2i(x, y, (int) Math.ceil(right) - x, (int) Math.ceil(bottom) - y);
+            if (!element.isClipped()) return new Rect2i(0, 0, 0, 0);
+            return screenBox(window, element);
         }
     }
 }

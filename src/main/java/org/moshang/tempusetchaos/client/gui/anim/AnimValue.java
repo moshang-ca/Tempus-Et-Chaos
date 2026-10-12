@@ -4,11 +4,7 @@ import lombok.Getter;
 
 /**
  * <b>A driver</b>: the tween state of a single scalar, moving from its previous value to a target.
- * {@link #update()} is meant to be called once per frame by whoever drives it (see {@link Anims}); the
- * value itself is then read through {@link #getValue()}.
- * <p>
- * Elements that only need to <i>read</i> an animated number keep one of these as a handle and hand it to
- * an {@code Anims.tween(...)}. They must not call {@code to()} / {@code update()} themselves.
+ * {@link #update()} advances it once per frame and {@link #getValue()} reads the current number.
  */
 @SuppressWarnings("unused")
 public class AnimValue {
@@ -46,14 +42,6 @@ public class AnimValue {
         this.startMs = Anim.now() + this.delayMs;
         this.easing = easing;
         this.running = true;
-    }
-
-    public void to(float target, long durationMs, Easing easing) {
-        to(target, 0L, durationMs, easing);
-    }
-
-    public void to(float target, long durationMs) {
-        to(target, durationMs, this.easing);
     }
 
     public void update() {

@@ -2,8 +2,7 @@ package org.moshang.tempusetchaos.client.gui.anim;
 
 /**
  * When a move happens, and how long it takes: a delay measured from the node's trigger plus a duration, both on the
- * clock {@link Anim} reads. A cue is shared rather than owned, which is what keeps the nodes of one effect on the same
- * window and what makes "after that move is over" something a type expresses.
+ * clock {@link Anim} reads. A cue is shared rather than owned, which keeps the nodes of one effect on the same window.
  */
 @SuppressWarnings("unused")
 public record Cue(long delayMs, long durationMs, Easing easing) {
@@ -30,8 +29,7 @@ public record Cue(long delayMs, long durationMs, Easing easing) {
     }
 
     /**
-     * A track shaped for this cue, running {@code from -> to} across its window. Handing the same cue to several
-     * nodes is what guarantees they share the shape as well as the timing.
+     * A track shaped for this cue, running {@code from -> to} across its window.
      */
     public Track track(float from, float to) {
         return new Track().key(0f, from).key(1f, to, easing);

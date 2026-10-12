@@ -14,7 +14,7 @@ import java.util.Set;
  * arbitrated on purpose.
  * <p>
  * {@link #tick()} and {@link #fire(AnimEvent, boolean)} walk the list by index, so adding from inside a
- * callback is safe while removing one makes the next entry be skipped. Do not mutate the list there.
+ * callback is safe while removing one makes the next entry be skipped.
  */
 @SuppressWarnings("unused")
 public final class AnimSet {
@@ -56,9 +56,7 @@ public final class AnimSet {
     }
 
     /**
-     * Writes the end state once and leaves it there. The animations are not ticked any more, so whatever they would
-     * have written last is what the node keeps: skipping them outright would strand the props at their start value,
-     * which is invisible for a fade in.
+     * Writes the end state once and leaves it there.
      */
     public void settle() {
         if (settled) return;
@@ -77,8 +75,8 @@ public final class AnimSet {
     }
 
     /**
-     * Fire {@link AnimEvent#CLOSING} and remember which animations that event actually started. Only those
-     * keep the node alive, so an animation that was already running (a loop, say) can never block a close.
+     * Fire {@link AnimEvent#CLOSING} and remember which animations that event actually started: only those keep the
+     * node alive, so an animation that was already running can never block a close.
      */
     public void startClosing() {
         if (!closing.isEmpty()) return;
