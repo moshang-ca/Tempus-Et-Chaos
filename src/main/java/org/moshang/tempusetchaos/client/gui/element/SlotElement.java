@@ -1,6 +1,5 @@
 package org.moshang.tempusetchaos.client.gui.element;
 
-import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.minecraft.client.gui.GuiGraphics;
@@ -19,7 +18,6 @@ import java.util.function.Supplier;
 public class SlotElement extends UiElement {
     private static final int ITEM_SIZE = 16;
 
-    @Getter
     protected final Supplier<ItemStack> stack;
     private final Supplier<List<Component>> tooltip;
 

@@ -28,8 +28,9 @@ public class TECCapabilities {
         event.registerBlockEntity(FLUID_ENTROPY, TECBlockEntities.ENTROPY_VESSEL_BE.get(), (be, side) -> be.getFluidHandler());
         event.registerBlockEntity(FLUID_ENTROPY, TECBlockEntities.ENTROPY_FORGE_BE.get(), (be, side) -> be.getEntropyTank());
 
-        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, TECBlockEntities.ENTROPY_FORGE_BE.get(), (be, side) -> be.getItemHandler());
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, TECBlockEntities.ENTROPY_FORGE_BE.get(), (be, side) -> be.getInvWrapper());
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, TECBlockEntities.ENTROPY_REACTOR_BE.get(), (be, side) -> be.getItemHandler());
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, TECBlockEntities.TIME_EXTRACTOR_BE.get(), (be, side) -> be.getInputHandler());
 
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, TECBlockEntities.ENTROPY_FORGE_BE.get(), (be, side) -> be.getEnergyStorage());
 

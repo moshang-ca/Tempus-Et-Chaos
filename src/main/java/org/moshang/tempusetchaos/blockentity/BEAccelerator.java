@@ -63,9 +63,11 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity implements IMatcha
     }
 
     @Getter
-    private final MatchSet blacklist = new MatchSet();
+    private final MatchSet matchSet = new MatchSet();
     private final List<Entity> entityCache = new ArrayList<>();
     private final AABB area;
+    @Getter
+    private boolean blacklistMode = true;
     @Getter
     private int accelerateMultiplier = MIN_MULTIPLIER;
     @Getter
@@ -90,7 +92,7 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity implements IMatcha
             entityCache.addAll(level.getEntities((Entity) null, area, entity -> {
                 EntityType<?> type = entity.getType();
                 ResourceLocation entityTypeName = BuiltInRegistries.ENTITY_TYPE.getKey(type);
-                return !(DEFAULT_BLACKLIST.contains(MatchSet.Entry.entity(entityTypeName)) || blacklist.matchEntity(entityTypeName, type));
+                return !(DEFAULT_BLACKLIST.contains(MatchSet.Entry.entity(entityTypeName)) || matchSet.matchEntity(entityTypeName, type));
             }));
         }
         if (innerNetwork != null) {
@@ -109,16 +111,19 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity implements IMatcha
             assert level != null;
             BlockState state = level.getBlockState(pos);
             ResourceLocation blockName = BuiltInRegistries.BLOCK.getKey(state.getBlock());
-            if (DEFAULT_BLACKLIST.contains(MatchSet.Entry.block(blockName)) || blacklist.matchBlock(blockName, state)) return;
-            if (state.isRandomlyTicking() && level.random.nextInt(randomTicks) < Math.min(extraTicks, randomTicks)) {
-                state.randomTick((ServerLevel) level, pos, level.random);
-            } else  {
-                BlockEntity be = level.getBlockEntity(pos);
-                if (be == null) return;
-                BlockEntityTicker<BlockEntity> ticker = (BlockEntityTicker<BlockEntity>) state.getTicker(level, be.getType());
-                if (be.isRemoved() || ticker == null) return;
-                for (int i = 0; i < extraTicks; ++i) {
-                    ticker.tick(level, pos, state, be);
+            if (DEFAULT_BLACKLIST.contains(MatchSet.Entry.block(blockName))) return;
+            if (matchSet.matchBlock(blockName, state)) {
+                if (blacklistMode) return;
+                if (state.isRandomlyTicking() && level.random.nextInt(randomTicks) < Math.min(extraTicks, randomTicks)) {
+                    state.randomTick((ServerLevel) level, pos, level.random);
+                } else {
+                    BlockEntity be = level.getBlockEntity(pos);
+                    if (be == null) return;
+                    BlockEntityTicker<BlockEntity> ticker = (BlockEntityTicker<BlockEntity>) state.getTicker(level, be.getType());
+                    if (be.isRemoved() || ticker == null) return;
+                    for (int i = 0; i < extraTicks; ++i) {
+                        ticker.tick(level, pos, state, be);
+                    }
                 }
             }
         });
@@ -126,7 +131,6 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity implements IMatcha
 
     private void accelerateEntities() {
         int extraTicks = accelerateMultiplier - 1;
-        assert level != null;
         for (int i = 0; i < entityCache.size() && i < MAX_ACC_ENTITY; ++i) {
             Entity entity = entityCache.get(i);
             if (entity instanceof Player) continue;
@@ -149,13 +153,20 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity implements IMatcha
     }
 
     @Override
+    public void setBlacklistMode(boolean b) {
+        this.blacklistMode = b;
+        System.out.println("changed blacklist mode: " + b);
+        markUpdate();
+    }
+
+    @Override
     public void addMatchSet(MatchSet.Entry entry) {
-        if (blacklist.add(entry)) markUpdate();
+        if (matchSet.add(entry)) markUpdate();
     }
 
     @Override
     public void removeMatchSet(MatchSet.Entry entry) {
-        if (blacklist.remove(entry)) markUpdate();
+        if (matchSet.remove(entry)) markUpdate();
     }
 
     @Override
@@ -180,21 +191,22 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity implements IMatcha
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         this.accelerateMultiplier = Mth.clamp(tag.getInt("acc_multiplier"), MIN_MULTIPLIER, MAX_MULTIPLIER);
+        this.blacklistMode = tag.getBoolean("blacklist");
         this.consumed = consumptionOf(this.accelerateMultiplier);
-        this.blacklist.clear();
-        // the codec is listOf, so the key holds a list of compound entries: the type argument is the element type
-        MatchSet.CODEC.parse(NbtOps.INSTANCE, tag.getList("blacklist", Tag.TAG_COMPOUND))
-                .resultOrPartial(error -> log.warn("Failed to load blacklist: {}", error))
-                .ifPresent(loaded -> loaded.ordered().forEach(this.blacklist::add));
+        this.matchSet.clear();
+        MatchSet.CODEC.parse(NbtOps.INSTANCE, tag.getList("matchset", Tag.TAG_COMPOUND))
+                .resultOrPartial(error -> log.warn("Failed to load matchset: {}", error))
+                .ifPresent(loaded -> loaded.ordered().forEach(this.matchSet::add));
     }
 
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         tag.putInt("acc_multiplier", this.accelerateMultiplier);
-        MatchSet.CODEC.encodeStart(NbtOps.INSTANCE, this.blacklist)
-                .resultOrPartial(error -> log.warn("Failed to save blacklist: {}", error))
-                .ifPresent(nbt -> tag.put("blacklist", nbt));
+        tag.putBoolean("blacklist", this.blacklistMode);
+        MatchSet.CODEC.encodeStart(NbtOps.INSTANCE, this.matchSet)
+                .resultOrPartial(error -> log.warn("Failed to save matchset: {}", error))
+                .ifPresent(nbt -> tag.put("matchset", nbt));
     }
 
     @Override

@@ -72,7 +72,8 @@ public interface IScrollable extends IUiNode {
             return true;
         }
 
-        /** One frame of easing. @return whether the offset moved */
+        /** One frame of easing.
+         * @return whether the offset moved */
         public boolean advance(int maxScroll) {
             target = Mth.clamp(target, 0f, maxScroll);
             long now = Anim.now();
@@ -86,6 +87,11 @@ public interface IScrollable extends IUiNode {
             boolean moved = offset != target;
             offset = target;
             return moved;
+        }
+
+        public void reset() {
+            this.offset = 0f;
+            this.target = 0f;
         }
     }
 }

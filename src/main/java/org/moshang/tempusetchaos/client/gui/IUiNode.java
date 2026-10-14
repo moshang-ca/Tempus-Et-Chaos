@@ -84,14 +84,14 @@ public interface IUiNode {
      * Drawn by the host after every node has had its {@link #render}, with the node's own pose and clip left off and
      * the mouse in the host's space rather than local coordinates, so the content is placed by what it draws itself.
      */
-    default void renderForeground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {}
+    default void renderForeground(GuiGraphics graphics, AnimProps.Host mouse, float partialTick) {}
 
     /**
      * Drawn by the host once every node has had its {@link #renderForeground}, for the node the mouse is on, also with
      * the node's own pose and clip left off. It is the place for content that follows the cursor past the node's own
      * bounds and still stays under whatever covers the node.
      */
-    default void renderOverlay(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {}
+    default void renderOverlay(GuiGraphics graphics, AnimProps.Host mouse, float partialTick) {}
 
     default void mouseMoved(double mouseX, double mouseY) {}
     default boolean isMouseClicked(double mouseX, double mouseY, int button) { return false; }

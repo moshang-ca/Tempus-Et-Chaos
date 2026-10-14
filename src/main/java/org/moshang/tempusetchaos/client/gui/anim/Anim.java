@@ -1,6 +1,9 @@
 package org.moshang.tempusetchaos.client.gui.anim;
 
+import lombok.Setter;
 import net.minecraft.Util;
+
+import java.util.function.LongSupplier;
 
 /**
  * Time base and interpolation helpers, stateless, so animations stay independent of the tick rate and the frame rate.
@@ -8,10 +11,12 @@ import net.minecraft.Util;
 public final class Anim {
     public static final float EPSILON = 0.001f;
 
-    private Anim() {}
+    /** The one clock every driver reads; */
+    @Setter
+    private static LongSupplier clock = Util::getMillis;
 
     public static long now() {
-        return Util.getMillis();
+        return clock.getAsLong();
     }
 
     public static float lerp(float a, float b, float t) {

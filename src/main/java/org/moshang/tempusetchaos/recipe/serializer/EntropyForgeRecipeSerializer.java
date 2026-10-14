@@ -11,6 +11,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.neoforged.neoforge.fluids.FluidStack;
 import org.moshang.tempusetchaos.recipe.EntropyForgeRecipe;
+import org.moshang.tempusetchaos.recipe.ItemRequirement;
+import org.moshang.tempusetchaos.util.TECConstants;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -18,17 +20,17 @@ import javax.annotation.ParametersAreNonnullByDefault;
 @ParametersAreNonnullByDefault
 public class EntropyForgeRecipeSerializer implements RecipeSerializer<EntropyForgeRecipe> {
     public static final MapCodec<EntropyForgeRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            EntropyForgeRecipe.ItemRequirement.CODEC.listOf()
+            ItemRequirement.CODEC.listOf()
                     .fieldOf("items").forGetter(EntropyForgeRecipe::getItemInputs),
             FluidStack.CODEC.listOf().fieldOf("fluids").forGetter(EntropyForgeRecipe::getFluidInputs),
             Codec.INT.optionalFieldOf("chronon", 0).forGetter(EntropyForgeRecipe::getChrononCost),
             Codec.INT.optionalFieldOf("energy", 0).forGetter(EntropyForgeRecipe::getEnergyCost),
-            Codec.INT.optionalFieldOf("time", EntropyForgeRecipe.DEFAULT_TIME).forGetter(EntropyForgeRecipe::getProcessingTime),
+            Codec.INT.optionalFieldOf("time", TECConstants.DEFAULT_PROCESS_TIME).forGetter(EntropyForgeRecipe::getProcessingTime),
             ItemStack.CODEC.fieldOf("result").forGetter(EntropyForgeRecipe::getResult)
     ).apply(instance, EntropyForgeRecipe::new));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, EntropyForgeRecipe> STREAM_CODEC = StreamCodec.composite(
-            EntropyForgeRecipe.ItemRequirement.STREAM_CODEC.apply(ByteBufCodecs.list(3)),
+            ItemRequirement.STREAM_CODEC.apply(ByteBufCodecs.list(3)),
             EntropyForgeRecipe::getItemInputs,
             FluidStack.STREAM_CODEC.apply(ByteBufCodecs.list()), EntropyForgeRecipe::getFluidInputs,
             ByteBufCodecs.VAR_INT, EntropyForgeRecipe::getChrononCost,

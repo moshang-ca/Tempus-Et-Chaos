@@ -35,7 +35,7 @@ public class BlockTimeExtractor extends BaseChrononMachineryBlock {
     protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock, BlockPos neighborPos, boolean movedByPiston) {
         super.neighborChanged(state, level, pos, neighborBlock, neighborPos, movedByPiston);
         if (level.getBlockEntity(neighborPos.above()) instanceof BETimeExtractor node) {
-            node.setCanProduce(BETimeExtractor.PRODUCE_CONDITIONS.contains(level.getBlockState(neighborPos).getBlock()));
+            node.setCanPassiveProduce(BETimeExtractor.PRODUCE_CONDITIONS.contains(level.getBlockState(neighborPos).getBlock()));
         }
     }
 
@@ -44,7 +44,7 @@ public class BlockTimeExtractor extends BaseChrononMachineryBlock {
         super.onPlace(state, level, pos, oldState, movedByPiston);
         if (BETimeExtractor.PRODUCE_CONDITIONS.contains(level.getBlockState(pos.below()).getBlock())) {
             if (level.getBlockEntity(pos) instanceof BETimeExtractor node) {
-                node.setCanProduce(true);
+                node.setCanPassiveProduce(true);
             }
         }
     }

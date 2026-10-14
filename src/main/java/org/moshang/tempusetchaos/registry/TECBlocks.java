@@ -9,18 +9,17 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import org.moshang.tempusetchaos.TempusEtChaos;
 import org.moshang.tempusetchaos.api.VesselTier;
 import org.moshang.tempusetchaos.block.*;
-import org.moshang.tempusetchaos.client.gui.annotation.RegistryLocalization;
-import org.moshang.tempusetchaos.client.gui.annotation.Translation;
+import org.moshang.tempusetchaos.annotation.RegistryLocalization;
+import org.moshang.tempusetchaos.annotation.Translation;
 
 import java.util.function.Function;
 
+@RegistryLocalization
 public class TECBlocks {
     public static final DeferredRegister.Blocks BLOCK_DR = DeferredRegister.createBlocks(TempusEtChaos.MODID);
 
-    @RegistryLocalization(translations = {@Translation(text = "Chronon_cable")})
     public static final DeferredBlock<BlockChrononNetCable> CHRONON_NET_CABLE =
             registerItemLikeBlock("chronon_cable", BlockChrononNetCable::new);
-    @RegistryLocalization(translations = {@Translation(text = "virtual_node")})
     public static final DeferredBlock<BlockVirtualNode> VIRTUAL_NODE =
             registerItemLikeBlock("virtual_node", BlockVirtualNode::new);
     public static final DeferredBlock<BlockTimeExtractor> TIME_EXTRACTOR =
@@ -48,6 +47,7 @@ public class TECBlocks {
     public static final DeferredBlock<BlockEntropyForge> ENTROPY_FORGE =
             registerItemLikeBlock("entropy_forge", BlockEntropyForge::new);
 
+    @RegistryLocalization(translations = {@Translation(text = "Entropy Gas")})
     public static final DeferredBlock<LiquidBlock> GAS_ENTROPY =
             BLOCK_DR.register("gas_entropy_block", () -> new LiquidBlock(TECFluids.GAS_ENTROPY_SOURCE.get(), BlockBehaviour.Properties.ofFullCopy(Blocks.WATER)));
 

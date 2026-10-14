@@ -1,14 +1,9 @@
 package org.moshang.tempusetchaos.recipe;
 
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import lombok.Getter;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
@@ -16,27 +11,21 @@ import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.fluids.FluidStack;
+import org.moshang.tempusetchaos.recipe.input.UniversalRecipeInput;
 import org.moshang.tempusetchaos.registry.TECRecipes;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
 
+@Getter
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
-public class EntropyForgeRecipe implements Recipe<UniversalRecipeInput> {
-    public static final int DEFAULT_TIME = 200;
-
-    @Getter
+public class EntropyForgeRecipe implements Recipe<UniversalRecipeInput>, ITimeConsumable {
     private final List<ItemRequirement> itemInputs;
-    @Getter
     private final List<FluidStack> fluidInputs;
-    @Getter
     private final int chrononCost;
-    @Getter
     private final int energyCost;
-    @Getter
     private final int processingTime;
-    @Getter
     private final ItemStack result;
 
     public EntropyForgeRecipe(List<ItemRequirement> itemInputs, List<FluidStack> fluidInputs,
@@ -106,6 +95,11 @@ public class EntropyForgeRecipe implements Recipe<UniversalRecipeInput> {
     }
 
     @Override
+    public boolean isPerTick() {
+        return false;
+    }
+
+    @Override
     public ItemStack assemble(UniversalRecipeInput input, HolderLookup.Provider registries) {
         return result.copy();
     }
@@ -144,19 +138,4 @@ public class EntropyForgeRecipe implements Recipe<UniversalRecipeInput> {
         return TECRecipes.ENTROPY_FORGE_RT.get();
     }
 
-    public record ItemRequirement(Ingredient ingredient, int count) {
-        public static final Codec<ItemRequirement> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                Ingredient.CODEC.fieldOf("ingredient").forGetter(ItemRequirement::ingredient),
-                Codec.INT.optionalFieldOf("count", 1).forGetter(ItemRequirement::count)
-        ).apply(instance, ItemRequirement::new));
-
-        public static final StreamCodec<RegistryFriendlyByteBuf, ItemRequirement> STREAM_CODEC = StreamCodec.composite(
-                Ingredient.CONTENTS_STREAM_CODEC, ItemRequirement::ingredient,
-                ByteBufCodecs.VAR_INT, ItemRequirement::count,
-                ItemRequirement::new);
-
-        public ItemRequirement {
-            if (count <= 0) throw new IllegalArgumentException("count must be > 0");
-        }
-    }
 }

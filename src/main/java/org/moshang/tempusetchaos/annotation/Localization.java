@@ -1,4 +1,4 @@
-package org.moshang.tempusetchaos.client.gui.annotation;
+package org.moshang.tempusetchaos.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

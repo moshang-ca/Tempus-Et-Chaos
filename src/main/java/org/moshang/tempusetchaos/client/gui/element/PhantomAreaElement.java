@@ -9,6 +9,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import org.moshang.tempusetchaos.client.gui.UiTextures;
+import org.moshang.tempusetchaos.client.gui.anim.AnimProps;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.ArrayList;
@@ -113,7 +114,7 @@ public class PhantomAreaElement extends UiElement implements GhostSlot {
     }
 
     @Override
-    public void renderForeground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void renderForeground(GuiGraphics graphics, AnimProps.Host mouse, float partialTick) {
         graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, 0x38FFFFFF);
     }
 

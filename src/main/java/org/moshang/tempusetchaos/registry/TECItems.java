@@ -10,12 +10,14 @@ import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.jetbrains.annotations.Nullable;
 import org.moshang.tempusetchaos.TempusEtChaos;
+import org.moshang.tempusetchaos.annotation.RegistryLocalization;
 import org.moshang.tempusetchaos.item.EntropyCoolingModule;
 import org.moshang.tempusetchaos.item.EntropyWrench;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@RegistryLocalization
 public class TECItems {
     public static final DeferredRegister.Items ITEM_DR = DeferredRegister.createItems(TempusEtChaos.MODID);
     public static final Map<String, DeferredItem<BlockItem>> BLOCK_ITEMS = new HashMap<>();

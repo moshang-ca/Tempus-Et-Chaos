@@ -11,11 +11,14 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import org.moshang.tempusetchaos.TempusEtChaos;
+import org.moshang.tempusetchaos.annotation.RegistryLocalization;
+import org.moshang.tempusetchaos.annotation.Translation;
 
 public class TECFluids {
     public static final DeferredRegister<FluidType> FLUID_TYPE_DR = DeferredRegister.create(NeoForgeRegistries.FLUID_TYPES, TempusEtChaos.MODID);
     public static final DeferredRegister<Fluid> FLUID_DR = DeferredRegister.create(BuiltInRegistries.FLUID, TempusEtChaos.MODID);
 
+    @RegistryLocalization(translations = {@Translation(text = "Entropy Gas")})
     public static final DeferredHolder<FluidType, FluidType> GAS_ENTROPY_TYPE =
             FLUID_TYPE_DR.register("gas_entropy_type", () -> new FluidType(
                     FluidType.Properties.create()

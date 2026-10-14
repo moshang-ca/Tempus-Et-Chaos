@@ -23,9 +23,11 @@ import org.moshang.tempusetchaos.client.gui.element.*;
 import org.moshang.tempusetchaos.client.gui.window.SimpleContainerWindow;
 import org.moshang.tempusetchaos.menu.MenuAccelerator;
 import org.moshang.tempusetchaos.network.ChrononNetworkSyncPayload;
+import org.moshang.tempusetchaos.network.MatchSetModePayload;
 import org.moshang.tempusetchaos.network.MatchSetModifyPayload;
 import org.moshang.tempusetchaos.network.MultiplierModifyPayload;
 import org.moshang.tempusetchaos.util.MatchSet;
+import org.moshang.tempusetchaos.util.TECLocalizations;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,19 +61,21 @@ public class ScreenAccelerator extends ContainerWindowScreen<MenuAccelerator> {
             super(ScreenAccelerator.this.menu, 176, 166, UiTextures.BASE_INVENTORY, 176, 166);
             elements.add(new ResourceGaugeElement(13, 12, 10, 60, UiTextures.CHANNEL,
                     () -> ChrononNetworkSyncPayload.ClientCache.getRatio(menu.getUuid()), -1, UiTextures.sprite("chronon"), this::getTooltip))
-                    .add(new InputFieldElement(40, 12, 49, () -> String.valueOf(menu.getMultiplier()),
+                    .add(new InputFieldElement(36, 12, 49, () -> String.valueOf(menu.getMultiplier()),
                             s -> {
                                 int multiplier = Integer.parseInt(s);
                                 menu.getBlockEntity().setAccelerateMultiplier(multiplier);
                                 PacketDistributor.sendToServer(new MultiplierModifyPayload(menu.getBlockPos(), multiplier));
                             }).filter(s -> s.matches("\\d{0,9}")))
+                    .add(new TextElement(36, 33, () -> Component.translatable(TECLocalizations.CHRONON_COST,
+                            TECLocalizations.formatCompact(-menu.getBlockEntity().getConsumed(), false, "CH")), 0xFFEF0101))
                     .add(new PhantomAreaElement(93, 12, 3, 3, this::matchSetStack, this::modifyMatchSet)
                             .filter(ScreenAccelerator::isMatchable).canOverflow(true))
                     .add(new TextureButtonElement(93, 67, 54, 7, false, DISCLOSURE_BUTTON, this::openInfo));
 
             for (int i = 0; i < 4; ++i) {
                 elements.add(new SlotElement(151, 8 + i * 18, () -> ItemStack.EMPTY,
-                        () -> List.of(Component.translatable("screen.window.element.tempusetchaos.acc_upgrade"))).texture(UiTextures.UPGRADE_SLOT));
+                        () -> List.of(Component.literal("Not implement yet"))).texture(UiTextures.UPGRADE_SLOT));
             }
 
 
@@ -92,15 +96,15 @@ public class ScreenAccelerator extends ContainerWindowScreen<MenuAccelerator> {
             openChild(infoWindow = window);
         }
 
-        /** The list shows every entry, tags included: a row can draw a tag, a cell of the area above cannot. */
         private List<MatchSet.Entry> matchSetEntries() {
-            return menu.getBlockEntity().getBlacklist().ordered();
+            return menu.getBlockEntity().getMatchSet().ordered();
         }
 
         private List<Component> getTooltip() {
             List<Component> tooltip = new ArrayList<>();
             ChrononNetworkSyncPayload.ClientCache cache = ChrononNetworkSyncPayload.ClientCache.get(menu.getUuid());
-            tooltip.add(Component.translatable("screen.window.element.tempusetchaos.chronon_ratio", cache.stored(), cache.capacity()));
+            tooltip.add(Component.translatable(TECLocalizations.CHRONON, TECLocalizations.formatCompact(cache.stored(), false, "CH"),
+                    TECLocalizations.formatCompact(cache.capacity(), false, "CH")));
             return tooltip;
         }
 
@@ -132,11 +136,7 @@ public class ScreenAccelerator extends ContainerWindowScreen<MenuAccelerator> {
         }
     }
 
-    /**
-     * The list of every entry, tags included. A tab picks the kind, the search box narrows by id, the row shows what
-     * the entry is, the selection is the list's own, and remove only ever applies to the row that is selected.
-     */
-    private static class MatchSetInfoWindow extends AbstractUiWindow {
+    private class MatchSetInfoWindow extends AbstractUiWindow {
         private static final int ROW_HEIGHT = 18;
         private static final int PADDING = 4;
         private static final int HEADER = 34;
@@ -151,8 +151,12 @@ public class ScreenAccelerator extends ContainerWindowScreen<MenuAccelerator> {
         private final InputFieldElement search;
         private final ListElement list;
 
-        /** What the list shows, rebuilt once a frame so the per-row readers do not filter the whole set each time. */
         private List<MatchSet.Entry> shown = List.of();
+        private List<ItemStack> icons = List.of();
+        private List<Component> labels = List.of();
+        private List<MatchSet.Entry> source = List.of();
+        private MatchSet.Entry.Kind kind = KINDS.getFirst();
+        private String filter = "";
         @Nullable
         private AddEntryWindow addWindow;
 
@@ -165,18 +169,20 @@ public class ScreenAccelerator extends ContainerWindowScreen<MenuAccelerator> {
             this.onAdd = onAdd;
             this.onRemove = onRemove;
 
-            kinds = new ToggleElement<>(PADDING, PADDING, width - PADDING * 2, 12, KINDS,
-                    kind -> Component.literal(kind.name()), kind -> {});
             search = new InputFieldElement(PADDING, PADDING + 16, width - PADDING * 2, 14, "");
             list = new ListElement(PADDING, PADDING + HEADER, width - PADDING * 2, height - PADDING * 2 - HEADER, ROW_HEIGHT)
                     .size(() -> shown.size())
                     .icons(this::icon)
                     .labels(this::label);
+            kinds = new ToggleElement<>(PADDING, PADDING, width - PADDING * 2, 12, KINDS,
+                    kind -> Component.literal(kind.name()), kind -> list.getScroll().reset());
             list.controls().add(new TextureButtonElement(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT, UiTextures.BUTTON, true,
                         () -> Component.literal("+"), this::openAdd))
                     .add(new TextureButtonElement(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT, UiTextures.BUTTON, true,
                         () -> Component.literal("-"), this::remove)
-                    .enabled(() -> list.selected() >= 0));
+                    .enabled(() -> list.selected() >= 0))
+                    .add(new InplaceToggleElement<>(0, 0, 18, 18, List.of(true, false), this::changeMatchMode)
+                            .addOptionBg(UiTextures.BLACKLIST).addOptionBg(UiTextures.WHITELIST).showing(() -> menu.getBlockEntity().isBlacklistMode()));
             elements.add(kinds).add(search).add(list);
         }
 
@@ -188,17 +194,23 @@ public class ScreenAccelerator extends ContainerWindowScreen<MenuAccelerator> {
 
         private void rebuildShown() {
             String text = search.getValue().toLowerCase(Locale.ROOT);
-            MatchSet.Entry.Kind kind = kinds.getSelected();
-            List<MatchSet.Entry> next = entries.get().stream()
-                    .filter(entry -> entry.kind() == kind)
+            MatchSet.Entry.Kind selected = kinds.getSelected();
+            List<MatchSet.Entry> source = this.entries.get();
+            if (source == this.source && selected == kind && text.equals(filter)) return;
+            this.source = source;
+            kind = selected;
+            filter = text;
+
+            List<MatchSet.Entry> next = source.stream()
+                    .filter(entry -> entry.kind() == selected)
                     .filter(entry -> text.isEmpty() || entry.id().toString().contains(text))
                     .toList();
-            // the selection is a position in this list, so it means nothing once the list shows something else
             if (!next.equals(shown)) list.selected(-1);
             shown = next;
+            icons = next.stream().map(MatchSet.Entry::toItemStack).toList();
+            labels = next.stream().map(MatchSetInfoWindow::label).toList();
         }
 
-        /** Resolved here, where the list that produced the index lives: an index means nothing to anyone else. */
         private void remove() {
             int index = list.selected();
             if (index >= 0 && index < shown.size()) onRemove.accept(shown.get(index));
@@ -216,12 +228,16 @@ public class ScreenAccelerator extends ContainerWindowScreen<MenuAccelerator> {
             openChild(addWindow = window);
         }
 
+        private void changeMatchMode(boolean b) {
+            PacketDistributor.sendToServer(new MatchSetModePayload(menu.getBlockPos(), b));
+        }
+
         private ItemStack icon(int index) {
-            return index < shown.size() ? MatchSet.Entry.toItemStack(shown.get(index)) : ItemStack.EMPTY;
+            return index < icons.size() ? icons.get(index) : ItemStack.EMPTY;
         }
 
         private Component label(int index) {
-            return index < shown.size() ? label(shown.get(index)) : Component.empty();
+            return index < labels.size() ? labels.get(index) : Component.empty();
         }
 
         private static Component label(MatchSet.Entry entry) {
@@ -248,7 +264,12 @@ public class ScreenAccelerator extends ContainerWindowScreen<MenuAccelerator> {
         private final ListElement candidates;
 
         private List<ResourceLocation> shown = List.of();
+        private List<Component> labels = List.of();
+        private List<MatchSet.Entry> taken = List.of();
+        private MatchSet.Entry.Kind kind = KINDS.getFirst();
+        private String filterText = "";
         private ItemStack sampleStack = ItemStack.EMPTY;
+        private ItemStack sample = ItemStack.EMPTY;
 
         public AddEntryWindow(IUiWindow parent, int width, int height,
                               Supplier<List<MatchSet.Entry>> entries, Consumer<MatchSet.Entry> onAdd) {
@@ -258,12 +279,12 @@ public class ScreenAccelerator extends ContainerWindowScreen<MenuAccelerator> {
             this.entries = entries;
             this.onAdd = onAdd;
 
-            kinds = new ToggleElement<>(PADDING, PADDING, width - PADDING * 2, 12, KINDS,
-                    kind -> Component.literal(kind.name()), kind -> {});
             filter = new InputFieldElement(PADDING, PADDING + 16, width - PADDING * 2 - 20, 14, "");
             candidates = new ListElement(PADDING, PADDING + 36, width - PADDING * 2, height - PADDING * 2 - 36, ROW_HEIGHT)
                     .size(() -> shown.size())
                     .labels(this::label);
+            kinds = new ToggleElement<>(PADDING, PADDING, width - PADDING * 2, 12, KINDS,
+                    kind -> Component.literal(kind.name()), kind -> candidates.getScroll().reset());
             candidates.controls().add(new TextureButtonElement(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT, UiTextures.BUTTON, true,
                     () -> Component.literal("+"), this::add));
             candidates.controls().add(new TextureButtonElement(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT, UiTextures.BUTTON, true,
@@ -279,47 +300,45 @@ public class ScreenAccelerator extends ContainerWindowScreen<MenuAccelerator> {
         }
 
         private void rebuildShown() {
+            if (!sampleStack.isEmpty()) kinds.setSelected(MatchSet.Entry.Kind.fromItemStack(sampleStack));
             String text = filter.getValue().toLowerCase(Locale.ROOT);
-            List<MatchSet.Entry> taken = entries.get();
-            if (!sampleStack.isEmpty()) {
-                kinds.setSelected(MatchSet.Entry.Kind.fromItemStack(sampleStack));
-            }
-            shown = switch (kinds.getSelected()) {
+            MatchSet.Entry.Kind selected = kinds.getSelected();
+            List<MatchSet.Entry> source = this.entries.get();
+            if (source == taken && selected == kind && text.equals(filterText) && sampleStack == sample) return;
+            candidates.selected(-1);
+            taken = source;
+            kind = selected;
+            filterText = text;
+            sample = sampleStack;
+
+            shown = switch (selected) {
                 case BLOCK -> {
-                    Block block = sampleBlock();
+                    Block block = sampleStack.getItem() instanceof BlockItem item ? item.getBlock() : null;
                     yield BuiltInRegistries.BLOCK.getTagNames()
                             .filter(tag -> tag.location().toString().contains(text))
                             .filter(tag -> block == null || block.defaultBlockState().is(tag))
                             .map(TagKey::location)
-                            .filter(id -> !taken.contains(MatchSet.Entry.blockTag(id)))
+                            .filter(id -> !source.contains(MatchSet.Entry.blockTag(id)))
                             .toList();
                 }
                 case ENTITY -> {
-                    EntityType<?> type = sampleType();
+                    EntityType<?> type = sampleStack.getItem() instanceof SpawnEggItem egg ? egg.getType(sampleStack) : null;
                     yield BuiltInRegistries.ENTITY_TYPE.getTagNames()
                             .filter(tag -> tag.location().toString().contains(text))
                             .filter(tag -> type == null || type.is(tag))
                             .map(TagKey::location)
-                            .filter(id -> !taken.contains(MatchSet.Entry.entityTag(id)))
+                            .filter(id -> !source.contains(MatchSet.Entry.entityTag(id)))
                             .toList();
                 }
                 default -> List.of();
             };
-        }
-
-        @Nullable
-        private Block sampleBlock() {
-            return sampleStack.getItem() instanceof BlockItem item ? item.getBlock() : null;
-        }
-
-        @Nullable
-        private EntityType<?> sampleType() {
-            return sampleStack.getItem() instanceof SpawnEggItem egg ? egg.getType(sampleStack) : null;
+            labels = shown.stream().map(id -> (Component) Component.literal("#" + id)).toList();
         }
 
         private void add() {
             int index = candidates.selected();
             if (index < 0 || index >= shown.size()) {
+                if (sampleStack.isEmpty()) return;
                 MatchSet.Entry entry = MatchSet.Entry.fromItemStack(sampleStack);
                 // If the player want to add a specific item, then we should consume it as a feedback
                 sampleStack = ItemStack.EMPTY;
@@ -333,7 +352,7 @@ public class ScreenAccelerator extends ContainerWindowScreen<MenuAccelerator> {
         }
 
         private Component label(int index) {
-            return index < shown.size() ? Component.literal("#" + shown.get(index)) : Component.empty();
+            return index < labels.size() ? labels.get(index) : Component.empty();
         }
 
         @Override

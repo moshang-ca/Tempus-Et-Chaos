@@ -28,5 +28,11 @@ public class TECNetwork {
                 MatchSetModifyPayload.STREAM_CODEC,
                 MatchSetModifyPayload::handle
         );
+
+        registrar.playToServer(
+                MatchSetModePayload.TYPE,
+                MatchSetModePayload.STREAM_CODEC,
+                MatchSetModePayload::handle
+        );
     }
 }

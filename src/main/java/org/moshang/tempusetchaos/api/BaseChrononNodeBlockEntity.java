@@ -43,6 +43,14 @@ public abstract class BaseChrononNodeBlockEntity extends BlockEntity implements 
     }
 
     @Override
+    public void onLoad() {
+        super.onLoad();
+        if (level != null && !level.isClientSide && ChrononNetworkData.getLevelNetwork(level, networkUUID) == null) {
+            IChrononNode.onNodePlaced(level, getBlockPos(), this);
+        }
+    }
+
+    @Override
     public void setNetworkUUID(UUID uuid) {
         boolean changed = !Objects.equals(this.networkUUID, uuid);
         this.networkUUID = uuid;

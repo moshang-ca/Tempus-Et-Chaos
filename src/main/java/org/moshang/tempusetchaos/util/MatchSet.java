@@ -18,6 +18,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.network.codec.NeoForgeStreamCodecs;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.*;
@@ -37,9 +38,13 @@ public final class MatchSet {
 
     private final Set<Entry> entries = new LinkedHashSet<>();
     private final Map<Entry.Kind, Index> index = new EnumMap<>(Entry.Kind.class);
+    /** The display order handed out until the set changes again. */
+    @Nullable
+    private List<Entry> ordered;
 
     public boolean add(Entry entry) {
         if (!entries.add(entry)) return false;
+        ordered = null;
         Index idx = index.computeIfAbsent(entry.kind, k -> new Index());
         if (entry.isTag) idx.tags.add(create(entry.kind, entry.id));
         else idx.ids.add(entry.id);
@@ -48,6 +53,7 @@ public final class MatchSet {
 
     public boolean remove(Entry entry) {
         if (!entries.remove(entry)) return false;
+        ordered = null;
         Index idx = index.get(entry.kind);
         if (idx == null) return false;
         if (entry.isTag) idx.tags.remove(create(entry.kind, entry.id));
@@ -60,6 +66,7 @@ public final class MatchSet {
     public void clear() {
         entries.clear();
         index.clear();
+        ordered = null;
     }
 
     @SuppressWarnings("unchecked")
@@ -98,9 +105,13 @@ public final class MatchSet {
         return entries.isEmpty();
     }
 
-    /** The single display order: server and client both use it, so index based edits line up. */
+    /**
+     * The single display order: server and client both use it, so index based edits line up. The same list is handed
+     * out until the set changes, which makes comparing instances the cheapest possible "did anything change".
+     */
     public List<Entry> ordered() {
-        return List.copyOf(entries);
+        if (ordered == null) ordered = List.copyOf(entries);
+        return ordered;
     }
 
     @SuppressWarnings("unchecked")

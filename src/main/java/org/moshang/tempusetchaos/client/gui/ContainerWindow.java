@@ -18,6 +18,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
 import org.jetbrains.annotations.Nullable;
+import org.moshang.tempusetchaos.client.gui.anim.AnimProps;
 import org.moshang.tempusetchaos.client.gui.element.UiElement;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -94,12 +95,6 @@ public abstract class ContainerWindow<T extends AbstractContainerMenu> extends A
     }
 
     @Override
-    public void setPosition(int x, int y) {
-        this.x = x;
-        this.y = y;
-    }
-
-    @Override
     public boolean handlesOutsideClicks() {
         return true;
     }
@@ -131,11 +126,11 @@ public abstract class ContainerWindow<T extends AbstractContainerMenu> extends A
      * space, so the offsets are the plain vanilla ones and the stack can never end up under a window.
      */
     @Override
-    public void renderForeground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void renderForeground(GuiGraphics graphics, AnimProps.Host mouse, float partialTick) {
         ItemStack carried = menu.getCarried();
         if (!draggingItem.isEmpty()) {
             ItemStack stack = isSplittingStack ? draggingItem.copyWithCount(Mth.ceil(draggingItem.getCount() / 2f)) : draggingItem;
-            renderFloatingItem(graphics, stack, mouseX - 8, mouseY - 16, null);
+            renderFloatingItem(graphics, stack, (int) mouse.x() - 8, (int) mouse.y() - 16, null);
         } else if (!carried.isEmpty()) {
             ItemStack stack = carried;
             String count = null;
@@ -143,7 +138,7 @@ public abstract class ContainerWindow<T extends AbstractContainerMenu> extends A
                 stack = carried.copyWithCount(quickCraftingRemainder);
                 if (stack.isEmpty()) count = ChatFormatting.YELLOW + "0";
             }
-            renderFloatingItem(graphics, stack, mouseX - 8, mouseY - 8, count);
+            renderFloatingItem(graphics, stack, (int) mouse.x() - 8, (int) mouse.y() - 8, count);
         }
 
         if (!snapbackItem.isEmpty() && snapbackEnd != null) {
@@ -157,15 +152,16 @@ public abstract class ContainerWindow<T extends AbstractContainerMenu> extends A
     }
 
     @Override
-    protected void renderTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
+    protected void renderTooltips(GuiGraphics graphics, AnimProps.Host mouse) {
         UiElement hovered = elements.getHovered();
         if (hovered != null && !hovered.getTooltip().isEmpty()) {
-            super.renderTooltips(graphics, mouseX, mouseY);
+            super.renderTooltips(graphics, mouse);
             return;
         }
         if (!menu.getCarried().isEmpty() || hoveredSlot == null || !hoveredSlot.hasItem()) return;
         ItemStack stack = hoveredSlot.getItem();
-        graphics.renderTooltip(mc.font, Screen.getTooltipFromItem(mc, stack), stack.getTooltipImage(), stack, mouseX, mouseY);
+        graphics.renderTooltip(mc.font, Screen.getTooltipFromItem(mc, stack), stack.getTooltipImage(), stack,
+                (int) mouse.x(), (int) mouse.y());
     }
 
     @Override

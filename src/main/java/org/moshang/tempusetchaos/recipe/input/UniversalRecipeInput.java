@@ -1,4 +1,4 @@
-package org.moshang.tempusetchaos.recipe;
+package org.moshang.tempusetchaos.recipe.input;
 
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeInput;

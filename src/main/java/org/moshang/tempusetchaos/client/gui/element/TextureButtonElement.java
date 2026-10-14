@@ -55,15 +55,8 @@ public class TextureButtonElement extends TextureElement {
         }
     }
 
-//    @Override
-//    public boolean isMouseClicked(double mouseX, double mouseY, int button) {
-//        if (button != 0 || !enabled.get()) return false;
-//        onClick.run();
-//        return true;
-//    }
-
     @Override
-    public boolean isMouseReleased(double mouseX, double mouseY, int button) {
+    public boolean isMouseClicked(double mouseX, double mouseY, int button) {
         if (button != 0 || !enabled.get()) return false;
         onClick.run();
         return true;

@@ -21,8 +21,6 @@ import java.util.function.Function;
 @ParametersAreNonnullByDefault
 public class ToggleElement<T> extends UiElement {
     private static final int TEXT_COLOR = 0xFFFFFFFF;
-    private static final int SELECTED_WASH = 0x60FFFFFF;
-    private static final int HOVER_WASH = 0x30FFFFFF;
 
     private final List<T> options;
     private final Function<T, Component> label;

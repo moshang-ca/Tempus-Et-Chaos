@@ -20,7 +20,6 @@ import java.util.Set;
 public final class AnimSet {
     @Accessors(fluent = true) @Getter
     private final AnimProps props = new AnimProps();
-    @Accessors(fluent = true) @Getter
     private final List<Animation> animations = new ArrayList<>();
     private final Set<Animation> closing = new LinkedHashSet<>();
 

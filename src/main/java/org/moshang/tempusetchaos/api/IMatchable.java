@@ -14,4 +14,7 @@ public interface IMatchable {
             throw new IllegalArgumentException("Unknown modifier mode: " + modifier);
         }
     }
+
+    default boolean isBlacklistMode() { return true; }
+    default void setBlacklistMode(boolean b) {}
 }

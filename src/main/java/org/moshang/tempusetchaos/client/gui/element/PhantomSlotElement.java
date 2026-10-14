@@ -5,6 +5,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
+import org.moshang.tempusetchaos.client.gui.anim.AnimProps;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
@@ -32,8 +33,8 @@ public class PhantomSlotElement extends SlotElement implements GhostSlot {
     }
 
     @Override
-    public void renderForeground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        graphics.fill(x + 1, y + 1, x + width, y + height, 0x38FFFFFF);
+    public void renderForeground(GuiGraphics graphics, AnimProps.Host mouse, float partialTick) {
+        graphics.fill(x , y, x + width, y + height, 0x38FFFFFF);
     }
 
     @Override

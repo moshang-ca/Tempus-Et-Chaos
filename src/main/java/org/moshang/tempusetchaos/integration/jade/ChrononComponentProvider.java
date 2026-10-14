@@ -4,6 +4,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.moshang.tempusetchaos.TempusEtChaos;
+import org.moshang.tempusetchaos.util.TECLocalizations;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IComponentProvider;
 import snownee.jade.api.ITooltip;
@@ -29,7 +30,7 @@ public enum ChrononComponentProvider implements IComponentProvider<BlockAccessor
         IDisplayHelper displayHelper = IDisplayHelper.get();
         String cur = displayHelper.humanReadableNumber(stored, "CH", false);
         String max = displayHelper.humanReadableNumber(capacity, "CH", false);
-        Component text = Component.translatable("jade.tempusetchaos.chronon", cur, max);
+        Component text = Component.translatable(TECLocalizations.CHRONON, cur, max);
         ProgressStyle style = helper.progressStyle()
                 .textColor(0xFFFFFF)
                 .overlay(helper.sprite(ResourceLocation.fromNamespaceAndPath(TempusEtChaos.MODID, "chronon"), 16, 16));

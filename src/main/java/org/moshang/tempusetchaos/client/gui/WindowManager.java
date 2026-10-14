@@ -132,10 +132,10 @@ public class WindowManager extends UiHost<IUiWindow> {
         double right = -Double.MAX_VALUE;
         double bottom = -Double.MAX_VALUE;
         for (int corner = 0; corner < 4; corner++) {
-            AnimProps.Local local = elements.toHost(element,
+            AnimProps.Host local = elements.toHost(element,
                     (corner & 1) == 0 ? 0 : element.getWidth(),
                     (corner & 2) == 0 ? 0 : element.getHeight());
-            AnimProps.Local screen = toHost(window, local.x(), local.y());
+            AnimProps.Host screen = toHost(window, local.x(), local.y());
             left = Math.min(left, screen.x());
             top = Math.min(top, screen.y());
             right = Math.max(right, screen.x());

@@ -19,6 +19,12 @@ public class TextElement extends UiElement {
         this.color = color;
     }
 
+    public TextElement(int x, int y, Supplier<Component> text, int color) {
+        super(x, y, 0, 0);
+        this.text = text;
+        this.color = color;
+    }
+
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         graphics.drawString(Minecraft.getInstance().font, text.get(), 0, 0, color, false);

@@ -17,16 +17,18 @@ import java.util.List;
 @ParametersAreNonnullByDefault
 @Slf4j
 public abstract class UiElement implements Animated {
+    protected static final int HOVER_WASH = 0x30FFFFFF;
+
     protected int x;
     protected int y;
     protected int width;
     protected int height;
 
-    @Setter
+    @Accessors(fluent = true) @Setter
     protected boolean visible = true;
     @Accessors(fluent = true) @Setter
     protected boolean canDrag = false;
-    private boolean hovered;
+    protected boolean hovered;
     @Accessors(fluent = true) @Getter
     private final AnimSet anims = new AnimSet();
 

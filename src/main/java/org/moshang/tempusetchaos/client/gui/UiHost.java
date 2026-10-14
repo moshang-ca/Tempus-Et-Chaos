@@ -266,17 +266,18 @@ public class UiHost<T extends IUiNode> {
             }
 
             // unclipped and unposed passes: first whatever has to sit above the whole screen, then the cursor's tooltip
+            AnimProps.Host mouse = new AnimProps.Host(mouseX, mouseY);
             for (T node : nodes) {
                 if (!isRenderable(node)) continue;
                 clearContentDepth(graphics);
-                node.renderForeground(graphics, mouseX, mouseY, partialTick);
+                node.renderForeground(graphics, mouse, partialTick);
                 graphics.flush();
             }
 
             T overlay = topmostAt(mouseX, mouseY);
             if (overlay != null) {
                 clearContentDepth(graphics);
-                overlay.renderOverlay(graphics, mouseX, mouseY, partialTick);
+                overlay.renderOverlay(graphics, mouse, partialTick);
                 graphics.flush();
             }
         } finally {
@@ -466,9 +467,9 @@ public class UiHost<T extends IUiNode> {
         return props.toLocal(mouseX, mouseY, node.getX(), node.getY(), node.getWidth(), node.getHeight());
     }
 
-    public AnimProps.Local toHost(T node, double localX, double localY) {
+    public AnimProps.Host toHost(T node, double localX, double localY) {
         AnimProps props = node.getRenderProps();
-        if (props == null || props.isIdentity()) return new AnimProps.Local(localX + node.getX(), localY + node.getY());
+        if (props == null || props.isIdentity()) return new AnimProps.Host(localX + node.getX(), localY + node.getY());
         return props.toHost(localX, localY, node.getX(), node.getY(), node.getWidth(), node.getHeight());
     }
 
@@ -489,8 +490,8 @@ public class UiHost<T extends IUiNode> {
      * Maps a point of this host's space to the screen: the screen host is the screen itself, a host nested in a window
      * folds that window's placement in.
      */
-    public AnimProps.Local toScreen(double x, double y) {
-        return new AnimProps.Local(x, y);
+    public AnimProps.Host toScreen(double x, double y) {
+        return new AnimProps.Host(x, y);
     }
 
     /** A box of a node's own space as its conservative screen AABB: the node's transform, then this host's placement. */
@@ -500,10 +501,10 @@ public class UiHost<T extends IUiNode> {
         double right = -Double.MAX_VALUE;
         double bottom = -Double.MAX_VALUE;
         for (int corner = 0; corner < 4; corner++) {
-            AnimProps.Local host = toHost(node,
+            AnimProps.Host host = toHost(node,
                     (corner & 1) == 0 ? box.getX() : box.getX() + box.getWidth(),
                     (corner & 2) == 0 ? box.getY() : box.getY() + box.getHeight());
-            AnimProps.Local screen = toScreen(host.x(), host.y());
+            AnimProps.Host screen = toScreen(host.x(), host.y());
             left = Math.min(left, screen.x());
             top = Math.min(top, screen.y());
             right = Math.max(right, screen.x());

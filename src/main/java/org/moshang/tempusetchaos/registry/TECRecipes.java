@@ -7,7 +7,9 @@ import net.minecraft.world.item.crafting.RecipeType;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.moshang.tempusetchaos.TempusEtChaos;
 import org.moshang.tempusetchaos.recipe.EntropyForgeRecipe;
+import org.moshang.tempusetchaos.recipe.TimeExtractorRecipe;
 import org.moshang.tempusetchaos.recipe.serializer.EntropyForgeRecipeSerializer;
+import org.moshang.tempusetchaos.recipe.serializer.TimeExtractorRecipeSerializer;
 
 import java.util.function.Supplier;
 
@@ -17,7 +19,11 @@ public class TECRecipes {
 
     public static final Supplier<RecipeType<EntropyForgeRecipe>> ENTROPY_FORGE_RT =
             RECIPE_TYPE_DR.register("entropy_forging", () -> RecipeType.simple(ResourceLocation.fromNamespaceAndPath(TempusEtChaos.MODID, "entropy_forging")));
+    public static final Supplier<RecipeType<TimeExtractorRecipe>> TIME_EXTRACTOR_RT =
+            RECIPE_TYPE_DR.register("time_extracting", () -> RecipeType.simple(ResourceLocation.fromNamespaceAndPath(TempusEtChaos.MODID, "time_extracting")));
 
     public static final Supplier<EntropyForgeRecipeSerializer> ENTROPY_FORGE_SERIALIZER =
             RECIPE_SERIALIZER_DR.register("entropy_forging", EntropyForgeRecipeSerializer::new);
+    public static final Supplier<TimeExtractorRecipeSerializer> TIME_EXTRACTOR_SERIALIZER =
+            RECIPE_SERIALIZER_DR.register("time_extracting", TimeExtractorRecipeSerializer::new);
 }

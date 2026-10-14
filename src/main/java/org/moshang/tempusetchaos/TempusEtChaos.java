@@ -13,7 +13,9 @@ import org.moshang.tempusetchaos.block.BlockEntropyPipe;
 import org.moshang.tempusetchaos.config.Config;
 import org.moshang.tempusetchaos.datagen.LocalizationProvider;
 import org.moshang.tempusetchaos.datagen.TECBlockStateProvider;
+import org.moshang.tempusetchaos.datagen.TECRecipeProvider;
 import org.moshang.tempusetchaos.registry.*;
+import org.moshang.tempusetchaos.util.TECLocalizations;
 
 @Mod(TempusEtChaos.MODID)
 public class TempusEtChaos {
@@ -23,7 +25,7 @@ public class TempusEtChaos {
         modContainer.registerConfig(ModConfig.Type.CLIENT, Config.SPEC);
 
         modEventBus.addListener(this::onModelLoaderRegister);
-        modEventBus.addListener(this::onLanguageGather);
+        modEventBus.addListener(this::onDataGenerate);
 
         TECBlocks.BLOCK_DR.register(modEventBus);
         TECItems.ITEM_DR.register(modEventBus);
@@ -43,10 +45,16 @@ public class TempusEtChaos {
         event.register(ResourceLocation.fromNamespaceAndPath(MODID, "entropy_pipe"), new BlockEntropyPipe.EntropyPipeGeometryLoader());
     }
 
-    public void onLanguageGather(GatherDataEvent event) {
+    public void onDataGenerate(GatherDataEvent event) {
         DataGenerator gen = event.getGenerator();
 
-        gen.addProvider(event.includeClient(), new LocalizationProvider(gen.getPackOutput(), MODID, "en_us", TECBlocks.class));
+        gen.addProvider(event.includeClient(), new LocalizationProvider(gen.getPackOutput(), MODID, "en_us", TECBlocks.class, TECItems.class, TECFluids.class, TECLocalizations.class));
         gen.addProvider(event.includeClient(), new TECBlockStateProvider(gen.getPackOutput(), MODID, event.getExistingFileHelper()));
+
+        gen.addProvider(event.includeServer(), new TECRecipeProvider(gen.getPackOutput(), event.getLookupProvider()));
+    }
+
+    public static ResourceLocation id(String name) {
+        return ResourceLocation.fromNamespaceAndPath(MODID, name);
     }
 }

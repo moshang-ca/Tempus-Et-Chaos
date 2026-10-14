@@ -18,7 +18,7 @@ public final class AnimProps {
     public float offsetY;
     public float alpha = 1f;
     /**
-     * White wash drawn over the node once it has rendered, 0 = none, 1 = opaque, on top of everything the node draws.
+     * Whitewash drawn over the node once it has rendered, 0 = none, 1 = opaque, on top of everything the node draws.
      */
     public float overlay;
     public float scaleX = 1f;
@@ -77,15 +77,15 @@ public final class AnimProps {
     }
 
     /** The node's own space point -> host space, the inverse of what {@link #toLocal} undoes. */
-    public Local toHost(double localX, double localY, int x, int y, int width, int height) {
-        if (isIdentity()) return new Local(localX + x, localY + y);
+    public Host toHost(double localX, double localY, int x, int y, int width, int height) {
+        if (isIdentity()) return new Host(localX + x, localY + y);
         float px = width * pivotX;
         float py = height * pivotY;
         double dx = (localX - px) * scaleX;
         double dy = (localY - py) * scaleY;
         double c = Math.cos(rotation);
         double s = Math.sin(rotation);
-        return new Local(x + offsetX + px + dx * c - dy * s, y + offsetY + py + dx * s + dy * c);
+        return new Host(x + offsetX + px + dx * c - dy * s, y + offsetY + py + dx * s + dy * c);
     }
 
     /** AABB of the transformed node, in host space. */
@@ -140,7 +140,11 @@ public final class AnimProps {
         }
     }
 
+    /** A point in a node's own space, its top left being (0, 0). */
     public record Local(double x, double y) { }
+
+    /** A point in the space of the host holding a node. */
+    public record Host(double x, double y) { }
 
     public record Rect(int left, int top, int right, int bottom) { }
 }

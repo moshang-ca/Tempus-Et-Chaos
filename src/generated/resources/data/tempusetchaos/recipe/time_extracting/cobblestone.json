@@ -1,0 +1,10 @@
+{
+  "type": "tempusetchaos:time_extracting",
+  "input": {
+    "ingredient": {
+      "item": "minecraft:cobblestone"
+    }
+  },
+  "output": 20,
+  "per_tick": true
+}

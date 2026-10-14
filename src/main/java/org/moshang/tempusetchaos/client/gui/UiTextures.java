@@ -19,6 +19,8 @@ public final class UiTextures {
     public static final ResourceLocation CHANNEL = uiSprite("chronon_channel");
     public static final ResourceLocation BUTTON = uiSprite("button");
     public static final ResourceLocation INPUT_FIELD = uiSprite("input_field");
+    public static final ResourceLocation BLACKLIST = sprite("icon/blacklist");
+    public static final ResourceLocation WHITELIST = sprite("icon/whitelist");
 
     private UiTextures() {}
 

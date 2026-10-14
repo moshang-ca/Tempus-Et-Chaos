@@ -28,8 +28,8 @@ public abstract class AbstractUiWindow implements IUiWindow, Animated {
     protected final UiHost<UiElement> elements = new UiHost<>() {
         /** Folded over by the window's own placement, which is what lets a viewport element clip in screen space. */
         @Override
-        public AnimProps.Local toScreen(double x, double y) {
-            return host == null ? new AnimProps.Local(x, y) : host.toHost(AbstractUiWindow.this, x, y);
+        public AnimProps.Host toScreen(double x, double y) {
+            return host == null ? new AnimProps.Host(x, y) : host.toHost(AbstractUiWindow.this, x, y);
         }
     };
     @Accessors(fluent = true)
@@ -127,18 +127,18 @@ public abstract class AbstractUiWindow implements IUiWindow, Animated {
 
     /** The host calls this outside the window's clip, so the tooltip can reach past the window bounds. */
     @Override
-    public void renderOverlay(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderTooltips(graphics, mouseX, mouseY);
+    public void renderOverlay(GuiGraphics graphics, AnimProps.Host mouse, float partialTick) {
+        renderTooltips(graphics, mouse);
     }
 
     /** Element tooltips are drawn after every element, otherwise later elements would paint over them. */
-    protected void renderTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
+    protected void renderTooltips(GuiGraphics graphics, AnimProps.Host mouse) {
         UiElement hovered = elements.getHovered();
         if (hovered == null) return;
         List<Component> tooltip = hovered.getTooltip();
         if (tooltip.isEmpty()) return;
         List<FormattedCharSequence> lines = tooltip.stream().map(Component::getVisualOrderText).toList();
-        graphics.renderTooltip(Minecraft.getInstance().font, lines, mouseX, mouseY);
+        graphics.renderTooltip(Minecraft.getInstance().font, lines, (int) mouse.x(), (int) mouse.y());
     }
 
     protected abstract void renderContent(GuiGraphics graphics, int mouseX, int mouseY, float partialTick);

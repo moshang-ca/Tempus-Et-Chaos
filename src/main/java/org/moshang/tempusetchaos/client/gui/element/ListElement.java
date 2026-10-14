@@ -16,7 +16,6 @@ import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BooleanSupplier;
 import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
@@ -28,7 +27,6 @@ import java.util.function.Supplier;
 @ParametersAreNonnullByDefault
 @Accessors(fluent = true, chain = true)
 public class ListElement extends UiElement implements IScrollable {
-    private static final int CONTROLS_HEIGHT = 14;
     private static final int CONTROL_GAP = 2;
     private static final int SCROLLBAR_WIDTH = 2;
     private static final int TRACK_COLOR = 0x40000000;
@@ -40,11 +38,11 @@ public class ListElement extends UiElement implements IScrollable {
     private int selected = -1;
 
     private final int rowHeight;
-    /** The rows, each clipped to the row area above the control strip. */
-    private final UiHost<UiElement> rowHost = new UiHost<>() {
+    /** The rows on screen, each clipped to the row area above the control strip. Only the visible ones exist. */
+    private final UiHost<ListRowElement> rowHost = new UiHost<>() {
         /** Folded over by the element's own host, which is what lets a row clip in screen space. */
         @Override
-        public AnimProps.Local toScreen(double x, double y) {
+        public AnimProps.Host toScreen(double x, double y) {
             return owner == null ? super.toScreen(x, y) : owner.toScreen(x + getX(), y + getY());
         }
     };
@@ -70,9 +68,18 @@ public class ListElement extends UiElement implements IScrollable {
         this.rowHeight = rowHeight;
     }
 
-    /** The row area above the control strip. */
+    /** The row area above the control strip, which is as tall as the tallest control in it. */
     public int rowsHeight() {
-        return Math.max(0, getHeight() - CONTROLS_HEIGHT);
+        return Math.max(0, getHeight() - controlsHeight());
+    }
+
+    /** The strip is measured from what is in it, so no control can be taller than the strip drawn around it. */
+    private int controlsHeight() {
+        int tallest = 0;
+        for (UiElement control : controls.getNodes()) {
+            tallest = Math.max(tallest, control.getHeight());
+        }
+        return tallest == 0 ? 0 : tallest + 2 * CONTROL_GAP;
     }
 
     @Override
@@ -81,15 +88,14 @@ public class ListElement extends UiElement implements IScrollable {
     }
 
     /**
-     * The row area expressed in the space of the row that starts at {@code rowY}, so a row crossing its boundary is cut
-     * there. Null for a row fully inside the area, and for any row while the screen mapping is missing.
+     * The row area expressed in the space of the row that starts at {@code rowY}: a row is cut there and at its own
+     * width, so a label wider than the row can never spill over the scrollbar or the selected band. Null while the
+     * screen mapping is missing.
      */
     @Nullable
-    private Rect2i rowBand(int rowY, int rowSize, int width) {
+    private Rect2i rowBand(int rowY, int width) {
         if (owner == null) return null;
-        int band = rowsHeight();
-        if (rowY >= 0 && rowY + rowSize <= band) return null;
-        return new Rect2i(0, -rowY, width, band);
+        return new Rect2i(0, -rowY, width, rowsHeight());
     }
 
     /**
@@ -103,7 +109,7 @@ public class ListElement extends UiElement implements IScrollable {
     @Override
     public void init(Minecraft mc, int hostWidth, int hostHeight) {
         rowHost.init(getWidth(), rowsHeight());
-        controls.init(getWidth(), CONTROLS_HEIGHT);
+        controls.init(getWidth(), controlsHeight());
         layoutControls();
     }
 
@@ -121,47 +127,52 @@ public class ListElement extends UiElement implements IScrollable {
     @Override
     public void updateAnimation() {
         anims().tick();
-        syncRows();
-        scroll.setContentHeight(rowHost.getNodes().size() * rowHeight);
+        int total = Math.max(0, size.get());
+        scroll.setContentHeight(total * rowHeight);
         scroll.advance(getMaxScroll());
+        syncRows(total);
         layoutControls();
         rowHost.updateAnimations();
         controls.updateAnimations();
     }
 
-    /** The rows follow the data, so the host is only ever asked for as many as there are. */
-    private void syncRows() {
-        List<UiElement> rows = rowHost.getNodes();
-        int wanted = Math.max(0, size.get());
-        while (rows.size() < wanted) rowHost.add(newRow(rows.size()));
+    /**
+     * Keeps exactly the rows the row area can hold and points each of them at the entry it currently stands for: the
+     * row count follows the viewport, never the data, so a list of a thousand entries still moves a handful of rows.
+     */
+    private void syncRows(int total) {
+        List<ListRowElement> rows = rowHost.getNodes();
+        int wanted = Math.min(visibleRows(), total);
+        while (rows.size() < wanted) rowHost.add(new ListRowElement(this, rowWidth(), rowHeight));
         while (rows.size() > wanted) rowHost.remove(rows.getLast());
-        // the selection is a position, so it stops meaning anything once the rows are gone
-        if (selected >= rows.size()) selected = -1;
-        layoutRows();
-    }
+        // the selection is a position, so it stops meaning anything once the data is gone
+        if (selected >= total) selected = -1;
 
-    private ListRowElement newRow(int index) {
-        return new ListRowElement(this, index, getWidth() - 2 * SCROLLBAR_WIDTH, rowHeight,
-                () -> icons.apply(index), () -> labels.apply(index),
-                () -> selected == index, this::pick);
-    }
-
-    /** The scroll is an offset on the rows themselves, so the host keeps testing them where they really are. */
-    private void layoutRows() {
-        List<UiElement> rows = rowHost.getNodes();
+        int offset = scroll.getOffset();
+        int first = offset / rowHeight;
         for (int i = 0; i < rows.size(); i++) {
-            UiElement row = rows.get(i);
-            int y = i * rowHeight - scroll.getOffset();
-            row.setPosition((getWidth() - row.getWidth()) / 2, y);
-            // hidden, not just off screen: a row that is not in the row area is neither drawn nor hit
-            row.setVisible(y + rowHeight > 0 && y < rowsHeight());
+            int index = first + i;
+            rows.get(i).show(index < total ? index : -1, SCROLLBAR_WIDTH, index * rowHeight - offset);
         }
     }
 
+    /** How many rows the row area can hold, counting the one crossing its bottom edge. */
+    private int visibleRows() {
+        int band = rowsHeight();
+        if (band <= 0) return 0;
+        int offset = scroll.getOffset();
+        return (offset + band - 1) / rowHeight - offset / rowHeight + 1;
+    }
+
+    private int rowWidth() {
+        return getWidth() - 2 * SCROLLBAR_WIDTH;
+    }
+
     private void layoutControls() {
+        int strip = controlsHeight();
         int x = 0;
         for (UiElement control : controls.getNodes()) {
-            control.setPosition(x, (CONTROLS_HEIGHT - control.getHeight()) / 2);
+            control.setPosition(x, (strip - control.getHeight()) / 2);
             x += control.getWidth() + CONTROL_GAP;
         }
     }
@@ -247,8 +258,9 @@ public class ListElement extends UiElement implements IScrollable {
     }
 
     /**
-     * One row of a list: an optional icon, a label and the selected marker. It is a leaf, the list owns the row count,
-     * the order and which row is selected; the row only reads them back and reports a click.
+     * One row of a list: an optional icon, a label and the selected marker. It is a leaf the list reuses, so it holds no
+     * entry of its own: the index it was last pointed at is what it draws, and it reads everything else back from the
+     * list.
      */
     protected static class ListRowElement extends UiElement {
         private static final int ICON_SIZE = 16;
@@ -259,61 +271,63 @@ public class ListElement extends UiElement implements IScrollable {
 
         private final List<Component> tooltip = new ArrayList<>();
         private final ListElement list;
-        private final Supplier<ItemStack> icon;
-        private final Supplier<Component> label;
-        private final BooleanSupplier selected;
-        private final IntConsumer onPick;
-        private final int index;
+        /** The entry this row stands for right now, -1 while it is a spare slot. */
+        private int index = -1;
 
-        public ListRowElement(ListElement list, int index, int width, int height,
-                              Supplier<ItemStack> icon, Supplier<Component> label,
-                              BooleanSupplier selected, IntConsumer onPick) {
+        ListRowElement(ListElement list, int width, int height) {
             super(0, 0, width, height);
             this.list = list;
+        }
+
+        /** Points this row at an entry and puts it where that entry is drawn. */
+        private void show(int index, int x, int y) {
+            boolean changed = this.index != index;
             this.index = index;
-            this.icon = icon;
-            this.label = label;
-            this.selected = selected;
-            this.onPick = onPick;
+            setPosition(x, y);
+            visible(index >= 0);
+            if (!changed) return;
+            if (index < 0) tooltip.clear();
+            else if (isHovered()) onHoverChanged(true);
         }
 
         /**
-         * The row area expressed in this row's own space, so a row crossing its boundary is cut there.
+         * The row box: the row area vertically, the row's own width horizontally.
          */
         @Nullable
         @Override
         public Rect2i viewport() {
-            return list.rowBand(getY(), getHeight(), getWidth());
+            return list.rowBand(getY(), getWidth());
         }
 
         @Override
         public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-            if (selected.getAsBoolean()) graphics.fill(0, 0, getWidth(), getHeight(), SELECTED_BACKGROUND);
+            if (list.selected == index) graphics.fill(0, 0, getWidth(), getHeight(), SELECTED_BACKGROUND);
             else if (isHovered()) graphics.fill(0, 0, getWidth(), getHeight(), HOVER_BACKGROUND);
 
             int textX = PADDING;
-            ItemStack stack = icon.get();
+            ItemStack stack = list.icons.apply(index);
             if (!stack.isEmpty()) {
                 graphics.renderItem(stack, PADDING, (getHeight() - ICON_SIZE) / 2);
                 textX += ICON_SIZE + PADDING;
             }
-            graphics.drawString(Minecraft.getInstance().font, label.get(), textX, (getHeight() - 8) / 2, TEXT_COLOR, false);
+            graphics.drawString(Minecraft.getInstance().font, list.labels.apply(index), textX, (getHeight() - 8) / 2, TEXT_COLOR, false);
         }
 
         @Override
         public boolean isMouseClicked(double mouseX, double mouseY, int button) {
-            if (button != 0) return false;
-            onPick.accept(index);
+            if (button != 0 || index < 0) return false;
+            list.pick(index);
             return true;
         }
 
         @Override
         public void onHoverChanged(boolean hovered) {
-            if (hovered && Minecraft.getInstance().font.width(label.get()) > width) {
-                tooltip.add(label.get());
-            } else {
-                tooltip.clear();
-            }
+            tooltip.clear();
+            if (!hovered) return;
+            Component label = list.labels.apply(index);
+            // the label is cut at the row's edge, so the tooltip is what has to carry the rest of it
+            int available = getWidth() - PADDING - (list.icons.apply(index).isEmpty() ? 0 : ICON_SIZE + PADDING);
+            if (Minecraft.getInstance().font.width(label) > available) tooltip.add(label);
         }
 
         @Override
