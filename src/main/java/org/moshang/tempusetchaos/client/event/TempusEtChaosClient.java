@@ -11,6 +11,7 @@ import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsE
 import org.moshang.tempusetchaos.TempusEtChaos;
 import org.moshang.tempusetchaos.client.ClientFluidExtension;
 import org.moshang.tempusetchaos.client.gui.screen.ScreenAccelerator;
+import org.moshang.tempusetchaos.client.gui.screen.ScreenExtractor;
 import org.moshang.tempusetchaos.client.model.BEVesselRenderer;
 import org.moshang.tempusetchaos.registry.TECBlockEntities;
 import org.moshang.tempusetchaos.registry.TECFluids;
@@ -36,6 +37,7 @@ public class TempusEtChaosClient {
     @SubscribeEvent
     public static void registerClientScreens(RegisterMenuScreensEvent event) {
         event.register(TECMenus.ACCELERATOR.get(), ScreenAccelerator::new);
+        event.register(TECMenus.TIME_EXTRACTOR.get(), ScreenExtractor::new);
     }
 
 }

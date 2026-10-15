@@ -26,7 +26,7 @@ import java.util.List;
 public abstract class ContainerWindowScreen<T extends AbstractContainerMenu> extends AbstractContainerScreen<T> implements WindowScreen {
     protected final WindowManager windows = new WindowManager(this);
 
-    protected ContainerWindowScreen(T menu, Inventory playerInventory, Component title) {
+    public ContainerWindowScreen(T menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
     }
 

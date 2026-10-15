@@ -7,6 +7,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.moshang.tempusetchaos.TempusEtChaos;
 import org.moshang.tempusetchaos.menu.MenuAccelerator;
+import org.moshang.tempusetchaos.menu.MenuExtractor;
 
 public class TECMenus {
     public static final DeferredRegister<MenuType<?>> MENU_DR =
@@ -16,5 +17,10 @@ public class TECMenus {
             MENU_DR.register("accelerator", () -> IMenuTypeExtension.create(
                     (containerId, inventory, buf) ->
                             new MenuAccelerator(containerId, inventory, buf.readBlockPos())
+            ));
+    public static final DeferredHolder<MenuType<?>, MenuType<MenuExtractor>> TIME_EXTRACTOR =
+            MENU_DR.register("time_extractor", () -> IMenuTypeExtension.create(
+                    (containerId, inventory, buf) ->
+                            new MenuExtractor(containerId, inventory, buf.readBlockPos())
             ));
 }
