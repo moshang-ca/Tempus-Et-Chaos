@@ -8,7 +8,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
-import org.moshang.tempusetchaos.client.gui.IScrollable;
 import org.moshang.tempusetchaos.client.gui.UiHost;
 import org.moshang.tempusetchaos.client.gui.anim.AnimProps;
 

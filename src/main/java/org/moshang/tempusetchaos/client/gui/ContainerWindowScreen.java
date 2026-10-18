@@ -1,5 +1,6 @@
 package org.moshang.tempusetchaos.client.gui;
 
+import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -24,6 +25,7 @@ import java.util.List;
  */
 @ParametersAreNonnullByDefault
 public abstract class ContainerWindowScreen<T extends AbstractContainerMenu> extends AbstractContainerScreen<T> implements WindowScreen {
+    @Getter
     protected final WindowManager windows = new WindowManager(this);
 
     public ContainerWindowScreen(T menu, Inventory playerInventory, Component title) {
@@ -41,6 +43,15 @@ public abstract class ContainerWindowScreen<T extends AbstractContainerMenu> ext
     @Nullable
     public Rect2i windowArea() {
         return windows.bounds();
+    }
+
+    /**
+     * The slot the cursor is over and the box it occupies on the screen, or null. Both origins are zero, so the screen
+     * box of a slot is its gui box as well.
+     */
+    @Nullable
+    public WindowManager.SlotTarget slotAt(double mouseX, double mouseY) {
+        return windows.slotAt(mouseX, mouseY);
     }
 
     /** Opens the windows of this screen: it runs on the first layout only, the windows then live until it closes. */

@@ -31,7 +31,7 @@ public class EntropyWorldData extends SavedData {
         CompoundTag concentrationsTag = tag.getCompound("concentrations");
         for (String key : concentrationsTag.getAllKeys()) {
             ChunkPos cPos = new ChunkPos(Long.parseLong(key));
-            data.setConcentration(cPos, concentrationsTag.getInt(key));
+            data.setConcentration(cPos, concentrationsTag.getFloat(key));
         }
         return data;
     }

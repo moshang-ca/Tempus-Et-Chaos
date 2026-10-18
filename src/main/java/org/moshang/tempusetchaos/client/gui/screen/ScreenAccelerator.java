@@ -67,7 +67,7 @@ public class ScreenAccelerator extends ContainerWindowScreen<MenuAccelerator> {
                                 menu.getBlockEntity().setAccelerateMultiplier(multiplier);
                                 PacketDistributor.sendToServer(new MultiplierModifyPayload(menu.getBlockPos(), multiplier));
                             }).filter(s -> s.matches("\\d{0,9}")))
-                    .add(new TextElement(36, 33, () -> Component.translatable(TECLocalizations.CHRONON_COST,
+                    .add(new TextElement(36, 33, () -> Component.translatable(TECLocalizations.CHRONON_RATE,
                             TECLocalizations.formatCompact(-menu.getBlockEntity().getConsumed(), false, "CH")), 0xFFEF0101))
                     .add(new PhantomAreaElement(93, 12, 3, 3, this::matchSetStack, this::modifyMatchSet)
                             .filter(ScreenAccelerator::isMatchable).canOverflow(true))

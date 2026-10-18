@@ -2,7 +2,6 @@ package org.moshang.tempusetchaos.blockentity;
 
 import com.mojang.logging.annotations.MethodsReturnNonnullByDefault;
 import lombok.Getter;
-import lombok.Setter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -14,7 +13,6 @@ import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.item.crafting.SingleRecipeInput;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -23,18 +21,17 @@ import org.moshang.tempusetchaos.api.RecipeableChrononNodeBE;
 import org.moshang.tempusetchaos.api.storage.IO;
 import org.moshang.tempusetchaos.api.storage.NotifiedItemStackHandler;
 import org.moshang.tempusetchaos.menu.MenuExtractor;
-import org.moshang.tempusetchaos.recipe.TimeExtractorRecipe;
+import org.moshang.tempusetchaos.recipe.ProcessingRecipe;
 import org.moshang.tempusetchaos.registry.TECBlockEntities;
 import org.moshang.tempusetchaos.registry.TECRecipes;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
-public class BETimeExtractor extends RecipeableChrononNodeBE<SingleRecipeInput, TimeExtractorRecipe> implements MenuProvider {
+public class BETimeExtractor extends RecipeableChrononNodeBE<ProcessingRecipe.TimeExtracting> implements MenuProvider {
     public static final Set<Block> PRODUCE_CONDITIONS = Set.of(Blocks.BEDROCK, Blocks.DEEPSLATE, Blocks.END_STONE);
 
     @Getter
@@ -42,12 +39,17 @@ public class BETimeExtractor extends RecipeableChrononNodeBE<SingleRecipeInput, 
             .setOnContentsChanged(() -> { recipeDirty = true; setChanged(); });
     private final int extractSpeed = 10;     // 10 ch/tick
 
-    @Setter
+    @Getter
     private boolean canPassiveProduce = false;
 
     public BETimeExtractor(BlockPos pos, BlockState blockState) {
         super(TECBlockEntities.TIME_EXTRACTOR_BE.get(), pos, blockState,
                 1200, TECRecipes.TIME_EXTRACTOR_RT.get());
+    }
+
+    @Override
+    protected List<NotifiedItemStackHandler> itemInputs() {
+        return List.of(inputHandler);
     }
 
     @Override
@@ -58,26 +60,10 @@ public class BETimeExtractor extends RecipeableChrononNodeBE<SingleRecipeInput, 
         }
     }
 
-    @Override
-    protected List<SingleRecipeInput> buildInputs() {
-        List<SingleRecipeInput> inputs = new ArrayList<>(inputHandler.getSlots());
-        for (int slot = 0; slot < inputHandler.getSlots(); slot++) {
-            inputs.add(new SingleRecipeInput(inputHandler.getStackInSlot(slot)));
-        }
-        return inputs;
-    }
-
-    @Override
-    protected boolean onRecipeStart(TimeExtractorRecipe recipe) {
-        return consume(List.of(recipe.getInputItem()), inputHandler);
-    }
-
-    @Override
-    protected boolean produce(TimeExtractorRecipe recipe, boolean finishing) {
-        int payout = recipe.chrononPerTick() + (finishing ? recipe.chrononOnFinish() : 0);
-        if (innerNetwork == null || innerNetwork.receiveChronon(payout, true) < payout) return false;
-        innerNetwork.receiveChronon(payout, false);
-        return true;
+    public void setCanPassiveProduce(boolean canPassiveProduce) {
+        if (this.canPassiveProduce == canPassiveProduce) return;
+        this.canPassiveProduce = canPassiveProduce;
+        markUpdate();
     }
 
     @Override
@@ -87,7 +73,12 @@ public class BETimeExtractor extends RecipeableChrononNodeBE<SingleRecipeInput, 
 
     @Override
     public int getProduced() {
-        return extractSpeed;
+        return canPassiveProduce ? extractSpeed : 0;
+    }
+
+    @Override
+    public float getChrononRate() {
+        return getProcessingTime() > 0 ? super.getChrononRate() : getProduced();
     }
 
     @Override
@@ -97,19 +88,23 @@ public class BETimeExtractor extends RecipeableChrononNodeBE<SingleRecipeInput, 
 
     @Override
     public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
-        return super.getUpdateTag(registries);
+        CompoundTag tag = new CompoundTag();
+        saveAdditional(tag, registries);
+        return tag;
     }
 
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         this.canPassiveProduce = tag.getBoolean("canPassiveProduce");
+        inputHandler.deserializeNBT(registries, tag.getCompound("inputs"));
     }
 
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         tag.putBoolean("canPassiveProduce", canPassiveProduce);
+        tag.put("inputs", inputHandler.serializeNBT(registries));
     }
 
     @Override

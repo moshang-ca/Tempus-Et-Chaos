@@ -12,6 +12,7 @@ import org.lwjgl.opengl.GL11;
 import org.moshang.tempusetchaos.client.gui.anim.Anim;
 import org.moshang.tempusetchaos.client.gui.anim.AnimProps;
 import org.moshang.tempusetchaos.client.gui.anim.Animated;
+import org.moshang.tempusetchaos.client.gui.element.IScrollable;
 import org.moshang.tempusetchaos.config.Config;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -107,7 +108,7 @@ public class UiHost<T extends IUiNode> {
             boolean animate = animationsEnabled();
             for (T node : nodes) {
                 if (node instanceof Animated animated) animated.anims().setEnabled(animate);
-                if (node instanceof IScrollable scrollable) scrollable.getScroll().setEnabled(animate);
+                if (node instanceof IScrollable scrollable) scrollable.getScroll().setEnableEasing(animate);
                 node.updateAnimation();
             }
             finishClosings();

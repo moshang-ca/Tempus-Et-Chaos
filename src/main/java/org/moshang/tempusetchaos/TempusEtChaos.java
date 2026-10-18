@@ -1,7 +1,9 @@
 package org.moshang.tempusetchaos;
 
+import net.minecraft.Util;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.RandomSource;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -11,6 +13,7 @@ import net.neoforged.neoforge.data.event.GatherDataEvent;
 import org.moshang.tempusetchaos.block.BlockChrononNetCable;
 import org.moshang.tempusetchaos.block.BlockEntropyPipe;
 import org.moshang.tempusetchaos.config.Config;
+import org.moshang.tempusetchaos.datagen.EntropyCompensationProvider;
 import org.moshang.tempusetchaos.datagen.LocalizationProvider;
 import org.moshang.tempusetchaos.datagen.TECBlockStateProvider;
 import org.moshang.tempusetchaos.datagen.TECRecipeProvider;
@@ -20,6 +23,8 @@ import org.moshang.tempusetchaos.util.TECLocalizations;
 @Mod(TempusEtChaos.MODID)
 public class TempusEtChaos {
     public static final String MODID = "tempusetchaos";
+
+    public static final RandomSource RANDOM = RandomSource.create(Util.getMillis());
 
     public TempusEtChaos(IEventBus modEventBus, ModContainer modContainer) {
         modContainer.registerConfig(ModConfig.Type.CLIENT, Config.SPEC);
@@ -52,6 +57,8 @@ public class TempusEtChaos {
         gen.addProvider(event.includeClient(), new TECBlockStateProvider(gen.getPackOutput(), MODID, event.getExistingFileHelper()));
 
         gen.addProvider(event.includeServer(), new TECRecipeProvider(gen.getPackOutput(), event.getLookupProvider()));
+
+        gen.addProvider(event.includeServer(), new EntropyCompensationProvider(gen.getPackOutput(), event.getLookupProvider(), MODID, event.getExistingFileHelper()));
     }
 
     public static ResourceLocation id(String name) {

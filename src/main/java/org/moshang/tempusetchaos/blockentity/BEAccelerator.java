@@ -54,8 +54,6 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity implements IMatcha
 
     }
 
-    private static int randomTicks;
-
     static {
         for (int i = 1; i <= 1024; ++i) {
             CONSUMPTION[i] = (int) (BASE_CONSUMPTION * (i * i + StrictMath.pow(i, 1.8) * (StrictMath.log(i) * 1.4426950408889634)));
@@ -72,7 +70,7 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity implements IMatcha
     private int accelerateMultiplier = MIN_MULTIPLIER;
     @Getter
     private int consumed = consumptionOf(MIN_MULTIPLIER);
-    private long tickCounter = 0;
+    private long lastRefreshTick = 0;
 
     public BEAccelerator(BlockPos pos, BlockState blockState) {
         super(TECBlockEntities.ACCELERATOR_BE.get(), pos, blockState, 2400);
@@ -85,9 +83,8 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity implements IMatcha
     public void serverTick() {
         super.serverTick();
         assert level != null;
-        randomTicks = level.getGameRules().getInt(GameRules.RULE_RANDOMTICKING);
-        tickCounter++;
-        if (tickCounter % 20 == 1) {
+        lastRefreshTick++;
+        if (level.getGameTime() % 20 == 1 && level.getGameTime() != lastRefreshTick) {
             entityCache.clear();
             entityCache.addAll(level.getEntities((Entity) null, area, entity -> {
                 EntityType<?> type = entity.getType();
@@ -106,15 +103,17 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity implements IMatcha
 
     @SuppressWarnings("unchecked")
     private void accelerateBlocks() {
+        assert level != null;
         int extraTicks = accelerateMultiplier - 1;
+        int randomTick = level.getGameRules().getInt(GameRules.RULE_RANDOMTICKING);
         BlockPos.betweenClosedStream(area).forEach(pos -> {
             assert level != null;
             BlockState state = level.getBlockState(pos);
+            if (state.isAir()) return;
             ResourceLocation blockName = BuiltInRegistries.BLOCK.getKey(state.getBlock());
             if (DEFAULT_BLACKLIST.contains(MatchSet.Entry.block(blockName))) return;
-            if (matchSet.matchBlock(blockName, state)) {
-                if (blacklistMode) return;
-                if (state.isRandomlyTicking() && level.random.nextInt(randomTicks) < Math.min(extraTicks, randomTicks)) {
+            if (blacklistMode != matchSet.matchBlock(blockName, state)) {
+                if (state.isRandomlyTicking() && level.random.nextInt(randomTick) < Math.min(extraTicks, randomTick)) {
                     state.randomTick((ServerLevel) level, pos, level.random);
                 } else {
                     BlockEntity be = level.getBlockEntity(pos);
@@ -155,7 +154,6 @@ public class BEAccelerator extends BaseChrononNodeBlockEntity implements IMatcha
     @Override
     public void setBlacklistMode(boolean b) {
         this.blacklistMode = b;
-        System.out.println("changed blacklist mode: " + b);
         markUpdate();
     }
 

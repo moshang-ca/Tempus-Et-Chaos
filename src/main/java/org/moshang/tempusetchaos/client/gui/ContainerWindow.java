@@ -38,6 +38,7 @@ import java.util.Set;
 @SuppressWarnings("unused")
 public abstract class ContainerWindow<T extends AbstractContainerMenu> extends AbstractUiWindow {
     protected static final int SLOT_SIZE = 16;
+    protected static final int SLOT_FRAME = 18;
 
     protected final T menu;
     protected final Minecraft mc = Minecraft.getInstance();
@@ -371,6 +372,8 @@ public abstract class ContainerWindow<T extends AbstractContainerMenu> extends A
     /** Drawn over the slots, at the window origin. Empty by default. */
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {}
 
+    protected void renderSlotBg(GuiGraphics graphics, Slot slot) {}
+
     protected void renderSlot(GuiGraphics graphics, Slot slot) {
         int sx = slot.x;
         int sy = slot.y;
@@ -380,6 +383,7 @@ public abstract class ContainerWindow<T extends AbstractContainerMenu> extends A
         ItemStack carried = menu.getCarried();
         String count = null;
 
+        renderSlotBg(graphics, slot);
         if (slot == clickedSlot && !draggingItem.isEmpty() && isSplittingStack && !item.isEmpty()) {
             item = item.copyWithCount(item.getCount() / 2);
         } else if (isQuickCrafting && quickCraftSlots.contains(slot) && !carried.isEmpty()) {

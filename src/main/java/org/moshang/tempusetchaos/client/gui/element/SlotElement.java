@@ -17,7 +17,6 @@ import java.util.function.Supplier;
 @ParametersAreNonnullByDefault
 public class SlotElement extends UiElement {
     private static final int ITEM_SIZE = 16;
-    private static final List<Component> EMPTY_TOOLTIPS = List.of();
 
     protected final Supplier<ItemStack> stack;
     private final Supplier<List<Component>> tooltip;
@@ -27,7 +26,7 @@ public class SlotElement extends UiElement {
     private ResourceLocation texture = UiTextures.SLOT;
 
     public static SlotElement ofNoTooltip(int x, int y, Supplier<ItemStack> stack) {
-        return new SlotElement(x, y, stack, () -> EMPTY_TOOLTIPS);
+        return new SlotElement(x, y, stack, List::of);
     }
 
     public SlotElement(int x, int y, Supplier<ItemStack> stack, Supplier<List<Component>> tooltip) {

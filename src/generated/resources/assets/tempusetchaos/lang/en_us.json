@@ -18,9 +18,16 @@
   "block.tempusetchaos.virtual_node": "Virtual Node",
   "fluid.tempusetchaos.gas_entropy": "Entropy Gas",
   "info.tempusetchaos.chronon": "%s / %s",
-  "info.tempusetchaos.chronon_cost": "%s/T",
+  "info.tempusetchaos.chronon_rate": "%s/T",
   "item.tempusetchaos.entropy_cooling_module": "Entropy Cooling Module",
   "item.tempusetchaos.entropy_crystal": "Entropy Crystal",
   "item.tempusetchaos.gas_entropy_bucket": "Gas Entropy Bucket",
-  "item.tempusetchaos.wrench": "Wrench"
+  "item.tempusetchaos.wrench": "Wrench",
+  "jei.tempusetchaos.chance": "%s%%",
+  "jei.tempusetchaos.chronon": "%s CH",
+  "jei.tempusetchaos.energy": "%s FE",
+  "jei.tempusetchaos.entropy_forging": "Entropy Forging",
+  "jei.tempusetchaos.per_tick": "Per Tick: %s",
+  "jei.tempusetchaos.time": "%s t",
+  "jei.tempusetchaos.time_extracting": "Time Extracting"
 }

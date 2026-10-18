@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.Rect2i;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 import org.moshang.tempusetchaos.client.gui.anim.AnimProps;
@@ -100,6 +101,18 @@ public class WindowManager extends UiHost<IUiWindow> {
     }
 
     /**
+     * The slot the cursor is over, asked of the window that is on top at that point: what the player can click is what
+     * another mod gets to look up. Null when the cursor is over no slot at all.
+     */
+    @Nullable
+    public SlotTarget slotAt(double mouseX, double mouseY) {
+        if (!(topmostAt(mouseX, mouseY) instanceof ContainerWindow<?> window)) return null;
+        AnimProps.Local local = localPoint(window, mouseX, mouseY);
+        Slot slot = window.findSlot(local.x(), local.y());
+        return slot == null ? null : new SlotTarget(window, slot);
+    }
+
+    /**
      * Whether something that takes the pointer is drawn over this element, which makes it a spot the player cannot
      * really reach. The stacking is read, not measured: a node later in its host's list is painted later and therefore
      * sits on top, so only the entries behind this element have to be looked at.
@@ -135,15 +148,34 @@ public class WindowManager extends UiHost<IUiWindow> {
             AnimProps.Host local = elements.toHost(element,
                     (corner & 1) == 0 ? 0 : element.getWidth(),
                     (corner & 2) == 0 ? 0 : element.getHeight());
-            AnimProps.Host screen = toHost(window, local.x(), local.y());
+            left = Math.min(left, local.x());
+            top = Math.min(top, local.y());
+            right = Math.max(right, local.x());
+            bottom = Math.max(bottom, local.y());
+        }
+        int x = (int) Math.floor(left);
+        int y = (int) Math.floor(top);
+        return screenBox(window, x, y, (int) Math.ceil(right) - x, (int) Math.ceil(bottom) - y);
+    }
+
+    /** A box of the window's own space in screen coordinates, the window's transform folded in. */
+    private Rect2i screenBox(AbstractUiWindow window, int x, int y, int width, int height) {
+        double left = Double.MAX_VALUE;
+        double top = Double.MAX_VALUE;
+        double right = -Double.MAX_VALUE;
+        double bottom = -Double.MAX_VALUE;
+        for (int corner = 0; corner < 4; corner++) {
+            AnimProps.Host screen = toHost(window,
+                    (corner & 1) == 0 ? x : x + width,
+                    (corner & 2) == 0 ? y : y + height);
             left = Math.min(left, screen.x());
             top = Math.min(top, screen.y());
             right = Math.max(right, screen.x());
             bottom = Math.max(bottom, screen.y());
         }
-        int x = (int) Math.floor(left);
-        int y = (int) Math.floor(top);
-        return new Rect2i(x, y, (int) Math.ceil(right) - x, (int) Math.ceil(bottom) - y);
+        int sx = (int) Math.floor(left);
+        int sy = (int) Math.floor(top);
+        return new Rect2i(sx, sy, (int) Math.ceil(right) - sx, (int) Math.ceil(bottom) - sy);
     }
 
     /** The window's own box in screen coordinates. Laid out rather than measured, exactly like {@link #bounds()}. */
@@ -288,6 +320,26 @@ public class WindowManager extends UiHost<IUiWindow> {
         public Rect2i area() {
             if (!element.isClipped()) return new Rect2i(0, 0, 0, 0);
             return screenBox(window, element);
+        }
+    }
+
+    /** A slot of a window that the cursor is over, with the box it occupies on the screen. */
+    public final class SlotTarget {
+        private final ContainerWindow<?> window;
+        private final Slot slot;
+
+        private SlotTarget(ContainerWindow<?> window, Slot slot) {
+            this.window = window;
+            this.slot = slot;
+        }
+
+        public ItemStack stack() {
+            return slot.getItem();
+        }
+
+        /** Recomputed rather than stored, because the window may move or animate between two calls. */
+        public Rect2i area() {
+            return screenBox(window, slot.x, slot.y, ContainerWindow.SLOT_SIZE, ContainerWindow.SLOT_SIZE);
         }
     }
 }

@@ -1,8 +1,9 @@
-package org.moshang.tempusetchaos.client.gui;
+package org.moshang.tempusetchaos.client.gui.element;
 
 import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.util.Mth;
+import org.moshang.tempusetchaos.client.gui.IUiNode;
 import org.moshang.tempusetchaos.client.gui.anim.Anim;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -54,7 +55,7 @@ public interface IScrollable extends IUiNode {
         private long lastMs = Anim.now();
         /** Pushed in by the host like the animation switch: while false the offset jumps instead of easing. */
         @Setter
-        private boolean enabled = true;
+        private boolean enableEasing = true;
 
         public int getOffset() {
             return Math.round(offset);
@@ -80,7 +81,7 @@ public interface IScrollable extends IUiNode {
             // the ease is a per-60-fps-frame share, so the step is normalized by the frames that really passed
             float frames = Math.max(0f, (now - lastMs) / FRAME_MS);
             lastMs = now;
-            if (enabled && Math.abs(target - offset) >= EPSILON) {
+            if (enableEasing && Math.abs(target - offset) >= EPSILON) {
                 offset += (target - offset) * (1f - (float) Math.pow(1f - EASE, frames));
                 return true;
             }

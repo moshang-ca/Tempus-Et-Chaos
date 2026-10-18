@@ -131,7 +131,11 @@ public class InputFieldElement extends UiElement {
             return true;
         }
         handedOff = false;
-        return editor.keyPressed(keyCode, scanCode, modifiers);
+        // A focused field owns the keyboard: a key it does not edit (E, for one) would otherwise reach the window
+        // manager and close the window instead of being typed.
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE) return false;
+        editor.keyPressed(keyCode, scanCode, modifiers);
+        return true;
     }
 
     @Override

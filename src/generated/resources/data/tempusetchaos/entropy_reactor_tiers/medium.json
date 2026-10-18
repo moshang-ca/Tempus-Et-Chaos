@@ -1,0 +1,9 @@
+{
+  "min_concentration": 30.0,
+  "outputs": [
+    {
+      "chance": 0.5,
+      "item": "tempusetchaos:entropy_crystal_block"
+    }
+  ]
+}

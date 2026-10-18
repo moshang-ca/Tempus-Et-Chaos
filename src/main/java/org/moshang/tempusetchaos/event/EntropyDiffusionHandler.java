@@ -43,7 +43,6 @@ public class EntropyDiffusionHandler {
         Map<ChunkPos, Float> transfers = new HashMap<>();
         for (var entry : concentrations.entrySet()) {
             ChunkPos pos = entry.getKey();
-            if (!level.getChunkSource().hasChunk(pos.x, pos.z)) continue;
             float value = entry.getValue();
             if (value <= 0) continue;
 
@@ -58,7 +57,6 @@ public class EntropyDiffusionHandler {
         }
 
         for (var entry : transfers.entrySet()) {
-            if (!level.getChunkSource().hasChunk(entry.getKey().x, entry.getKey().z)) continue;
             data.addConcentration(entry.getKey(), entry.getValue());
         }
     }

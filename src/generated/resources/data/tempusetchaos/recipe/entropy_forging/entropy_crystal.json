@@ -1,0 +1,47 @@
+{
+  "type": "tempusetchaos:entropy_forging",
+  "chronon_cost": {
+    "amount": 5,
+    "per_tick": true
+  },
+  "energy_cost": {
+    "amount": 20,
+    "per_tick": true
+  },
+  "fluid_inputs": [
+    {
+      "stack": {
+        "amount": 1000,
+        "id": "tempusetchaos:gas_entropy"
+      }
+    }
+  ],
+  "item_inputs": [
+    {
+      "ingredient": {
+        "item": "minecraft:iron_ingot"
+      }
+    },
+    {
+      "ingredient": {
+        "item": "minecraft:amethyst_shard"
+      }
+    }
+  ],
+  "item_outputs": [
+    {
+      "stack": {
+        "count": 1,
+        "id": "tempusetchaos:entropy_crystal"
+      }
+    },
+    {
+      "chance": 0.25,
+      "stack": {
+        "count": 1,
+        "id": "minecraft:quartz"
+      }
+    }
+  ],
+  "time": 100
+}

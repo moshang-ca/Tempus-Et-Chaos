@@ -20,11 +20,16 @@ public abstract class ChrononMenu<T extends BaseChrononNodeBlockEntity> extends 
     protected final T blockEntity;
     @Getter
     protected final BlockPos blockPos;
+    @Getter
+    protected final int machineSlots;
 
     protected ChrononMenu(@Nullable MenuType<?> menuType, int containerId, Inventory inventory, T blockEntity) {
         super(menuType, containerId);
         this.blockEntity = blockEntity;
         blockPos = blockEntity.getBlockPos();
+
+        addMachineSlots();
+        machineSlots = slots.size();
 
         for (int l = 0; l < 3; l++) {
             for (int j1 = 0; j1 < 9; j1++) {
@@ -37,6 +42,8 @@ public abstract class ChrononMenu<T extends BaseChrononNodeBlockEntity> extends 
         }
     }
 
+    protected void addMachineSlots() {  }
+
     @Override
     @NotNull
     public ItemStack quickMoveStack(@NotNull Player player, int index) {
@@ -46,24 +53,21 @@ public abstract class ChrononMenu<T extends BaseChrononNodeBlockEntity> extends 
         ItemStack stack = slot.getItem();
         ItemStack copy = stack.copy();
 
-        if (index < 27) {
-            if (!this.moveItemStackTo(stack, 27, 36, false)) {
-                return ItemStack.EMPTY;
-            }
-        } else if (index < 36) {
-            if (!this.moveItemStackTo(stack, 0, 27, false)) {
-                return ItemStack.EMPTY;
-            }
+        boolean moved;
+        if (index < machineSlots) {
+            moved = moveItemStackTo(stack, machineSlots, slots.size(), false);
+        } else if (index < machineSlots + 27) {
+            // the machine first, then the other half of the player inventory: the ranges never overlap, so a full
+            // machine still falls back into the hotbar exactly like an empty one
+            moved = moveItemStackTo(stack, 0, machineSlots, false);
+            moved |= moveItemStackTo(stack, machineSlots + 27, slots.size(), false);
         } else {
-            return ItemStack.EMPTY;
+            moved = moveItemStackTo(stack, 0, machineSlots, false);
+            moved |= moveItemStackTo(stack, machineSlots, machineSlots + 27, false);
         }
-
-        if (stack.isEmpty()) {
-            slot.set(ItemStack.EMPTY);
-        } else {
-            slot.setChanged();
-        }
-
+        if (!moved) return ItemStack.EMPTY;
+        if (stack.isEmpty()) slot.set(ItemStack.EMPTY);
+        else slot.setChanged();
         return copy;
     }
 

@@ -23,10 +23,14 @@ public class MenuExtractor extends ChrononMenu<BETimeExtractor>{
 
     public MenuExtractor(int containerId, Inventory inventory, BETimeExtractor blockEntity) {
         super(TECMenus.TIME_EXTRACTOR.get(), containerId, inventory, blockEntity);
+        addDataSlots(blockEntity.recipeData());
+    }
 
-        IItemHandler handler = blockEntity.getInputHandler();
-        addSlot(new SlotItemHandler(handler, 0, 33, 33));
-        addSlot(new SlotItemHandler(handler, 1, 51, 53));
+    @Override
+    protected void addMachineSlots() {
+        IItemHandler accessor = blockEntity.getInputHandler().guiAccessor();
+        addSlot(new SlotItemHandler(accessor, 0, 38, 26));
+        addSlot(new SlotItemHandler(accessor, 1, 38, 44));
     }
 
     @Override

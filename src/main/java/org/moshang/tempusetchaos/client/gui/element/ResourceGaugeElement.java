@@ -37,17 +37,22 @@ public class ResourceGaugeElement extends UiElement {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        graphics.blitSprite(texture, 0, 0, getWidth(), getHeight());
-        int fill = Math.round((getHeight() - 2) * Math.clamp(ratio.get(), 0f, 1f));
+        draw(graphics, 0, 0, getWidth(), getHeight(), texture, ratio.get(), resourceSprite, fillColor);
+    }
+
+    public static void draw(GuiGraphics graphics, int x, int y, int width, int height, ResourceLocation texture,
+                            float ratio, @Nullable ResourceLocation resourceSprite, int fillColor) {
+        UiTextures.blitNineSliced(graphics, texture, x, y, width, height, false);
+        int fill = Math.round((height - 2) * Math.clamp(ratio, 0f, 1f));
         if (fill <= 0) return;
         if (resourceSprite == null) {
-            graphics.fill(1, getHeight() - 1 - fill, getWidth() - 1, getHeight() - 1, fillColor);
+            graphics.fill(x + 1, y + height - 1 - fill, x + width - 1, y + height - 1, fillColor);
         } else {
-            int innerWidth = getWidth() - 2;
-            int innerHeight = getHeight() - 2;
+            int innerWidth = width - 2;
+            int innerHeight = height - 2;
 
             UiTextures.blitTranslucentSprite(graphics, resourceSprite, innerWidth, innerHeight,
-                    0, innerHeight - fill, 1, getHeight() - 1 - fill, innerWidth, fill);
+                    0, innerHeight - fill, x + 1, y + height - 1 - fill, innerWidth, fill);
         }
     }
 
